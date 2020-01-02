@@ -1,8 +1,8 @@
-# Water Linked Underwater GPS NMEA bridge (wl-95051_ugps_nmea_go)
+# Water Linked Underwater GPS NMEA bridge (wl-95051)
 
 ## About
 
-This application is used to integrate [Water Linked Underwater GPS](https://waterlinked.com/underwater-gps/) with the GPS in a boat and the chart plotter.
+This application can be used to let the [Water Linked Underwater GPS](https://waterlinked.com/underwater-gps/) use an external GPS/compass as input GPS and send the Locator position to a chart plotter.
 
 The application reads NMEA 0183 input from a serial/UDP connection and sends it to Water Linked Underwater GPS to allow it to use compass (HDT sentence) and GPS (GGA sentence) as an external source. Once this application is running the Underwater GPS must be configured to use this external source in the [settings](https://waterlinked.github.io/docs/explorer-kit/gui/settings/)
 
@@ -10,7 +10,7 @@ The application also reads the latitude/longitude of the Locator from the Underw
 
 ## Installation
 
-Download the application for your platform:
+[Download the application](https://github.com/waterlinked/ugps-nmea-go/releases) for your platform:
 
 | Name | Platform |
 |------|----------|
