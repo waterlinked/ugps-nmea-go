@@ -3,11 +3,17 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
+	"net"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
+	"github.com/tarm/serial"
 )
 
 var (
@@ -26,21 +32,109 @@ func debugPrintf(arguments string, a ...interface{}) {
 	}
 }
 
+// deviceIsUDP uses ":" to decide if this is UDP address or serial device
+func deviceIsUDP(device string) bool {
+	return len(strings.Split(listen, ":")) > 1
+}
+
+func baudAndPortFromDevice(device string) (string, int) {
+	baudrate := 115200
+	port := device
+	// Is the baudrate specified?
+	parts := strings.Split(device, "@")
+	if len(parts) > 1 {
+		b, err := strconv.Atoi(parts[1])
+		if err != nil {
+			fmt.Printf("Unable to parse baudrate: %s as numeric value\n", parts[1])
+			os.Exit(1)
+		}
+		baudrate = b
+		port = parts[0]
+	}
+	return port, baudrate
+}
+
 func main() {
 	fmt.Printf("Water Linked NMEA UGPS bridge (v%s %s.%s)\n", Version, BuildNum, SHA)
 	flag.StringVar(&listen, "i", "0.0.0.0:7777", "UDP device and port (host:port) OR serial device (COM7 /dev/ttyUSB1@4800) to listen for NMEA input. ")
-	flag.StringVar(&output, "o", "127.0.0.1:2947", "UDP device and port (host:port) OR serial device (COM7 /dev/ttyUSB1) to send NMEA output. ")
+	flag.StringVar(&output, "o", "", "UDP device and port (host:port) OR serial device (COM7 /dev/ttyUSB1) to send NMEA output. ")
 	flag.StringVar(&baseURL, "url", "http://192.168.2.94", "URL of Underwater GPS")
 	//flag.BoolVar(&verbose, "v", false, "verbose")
 	flag.Parse()
 
-	inStatusCh := make(chan inputStats, 1)
-	go inputLoop(listen, inStatusCh)
-	outStatusCh := make(chan outStats, 1)
-	if output != "" {
-		go outputLoop(output, outStatusCh)
+	// Same serial port for input and output?
+	sameInOut := (listen == output) && !deviceIsUDP(listen)
+	if sameInOut {
+		fmt.Println("Same port for input and output", listen)
 	}
 
+	// Channels
+	inStatusCh := make(chan inputStats, 1)
+	masterCh := make(chan externalMaster, 1)
+	outStatusCh := make(chan outStats, 1)
+
+	// Output
+	var writer io.Writer = nil
+
+	// Setup input
+	if deviceIsUDP(listen) {
+		// Input from UDP
+		go inputUDPLoop(listen, masterCh, inStatusCh)
+	} else {
+		// Input from serial port
+		port, baudrate := baudAndPortFromDevice(listen)
+
+		c := &serial.Config{Name: port, Baud: baudrate}
+		s, err := serial.OpenPort(c)
+		if err != nil {
+			fmt.Printf("Error opening serial port: %v\n", err)
+			os.Exit(1)
+		}
+		defer s.Close()
+
+		go inputSerialLoop(s, masterCh, inStatusCh)
+		if sameInOut {
+			// Output is to same serial port as input
+			writer = s
+		}
+	}
+	go inputLoop(masterCh, inStatusCh)
+
+	// Setup output
+	if output == "" {
+		// Output disabled
+	} else if deviceIsUDP(output) {
+		// Output to UDP
+		conn, err := net.Dial("udp", output)
+		if err != nil {
+			fmt.Printf("Error connecting to UDP: %v\n", err)
+			os.Exit(1)
+		}
+		defer conn.Close()
+		writer = conn
+
+	} else if !sameInOut {
+		// Output to different serial port
+		port, baudrate := baudAndPortFromDevice(listen)
+
+		c := &serial.Config{Name: port, Baud: baudrate}
+		s, err := serial.OpenPort(c)
+		if err != nil {
+			fmt.Printf("Error opening serial port: %v\n", err)
+			os.Exit(1)
+		}
+		defer s.Close()
+		writer = s
+	}
+
+	if writer != nil {
+		go outputLoop(writer, outStatusCh)
+	}
+
+	RunUI(inStatusCh, outStatusCh)
+}
+
+func RunUI(inStatusCh chan inputStats, outStatusCh chan outStats) {
 	// Let the goroutines initialize before starting GUI
 	time.Sleep(50 * time.Millisecond)
 	if err := ui.Init(); err != nil {
@@ -71,6 +165,9 @@ func main() {
 	outStatus := widgets.NewParagraph()
 	outStatus.Title = "Output status"
 	outStatus.Text = "Waiting for data"
+	if output == "" {
+		outStatus.Text = "Output not enabled"
+	}
 	height = 10
 	outStatus.SetRect(0, y, 80, y+height)
 	y += height
@@ -80,6 +177,9 @@ func main() {
 	draw := func() {
 		ui.Render(p, inpStatus, outStatus)
 	}
+
+	// Intial draw before any events have occured
+	draw()
 
 	uiEvents := ui.PollEvents()
 

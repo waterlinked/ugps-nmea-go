@@ -4,14 +4,9 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"net"
-	"os"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/pilebones/go-nmea"
-	"github.com/tarm/serial"
 )
 
 type outStats struct {
@@ -24,47 +19,11 @@ type outStats struct {
 
 const updateSeconds = 10
 
-func outputLoop(output string, outStatusCh chan outStats) {
+func outputLoop(writer io.Writer, outStatusCh chan outStats) {
 	var prevLat float64
 	var prevLon float64
 
 	var stats outStats
-
-	var writer io.Writer
-
-	// Use ":" to decide if this is UDP address or serial device
-	if len(strings.Split(output, ":")) > 1 {
-		conn, err := net.Dial("udp", output)
-		if err != nil {
-			fmt.Printf("Error connecting to UDP: %v\n", err)
-			os.Exit(1)
-		}
-		defer conn.Close()
-		writer = conn
-
-	} else {
-		baudrate := 115200
-		port := output
-		// Is the baudrate specified?
-		parts := strings.Split(output, "@")
-		if len(parts) > 1 {
-			b, err := strconv.Atoi(parts[1])
-			if err != nil {
-				fmt.Printf("Unable to parse baudrate: %s as numeric value\n", parts[1])
-				os.Exit(1)
-			}
-			baudrate = b
-			port = parts[0]
-		}
-		c := &serial.Config{Name: port, Baud: baudrate}
-		s, err := serial.OpenPort(c)
-		if err != nil {
-			fmt.Printf("Error opening serial port: %v\n", err)
-			os.Exit(1)
-		}
-		defer s.Close()
-		writer = s
-	}
 
 	for {
 		time.Sleep(100 * time.Millisecond)

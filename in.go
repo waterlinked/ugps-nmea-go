@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -115,18 +114,7 @@ func inputUDPLoop(listen string, msg chan externalMaster, inStatsCh chan inputSt
 	}
 }
 
-func inputSerialLoop(port string, baudrate int, msg chan externalMaster, inStatsCh chan inputStats) {
-	if baudrate == 0 {
-		baudrate = 112500
-	}
-
-	c := &serial.Config{Name: port, Baud: baudrate}
-	s, err := serial.OpenPort(c)
-	if err != nil {
-		fmt.Printf("Error opening serial port: %v\n", err)
-		os.Exit(1)
-	}
-	defer s.Close()
+func inputSerialLoop(s *serial.Port, msg chan externalMaster, inStatsCh chan inputStats) {
 
 	scanner := bufio.NewReader(s)
 	for {
@@ -153,29 +141,7 @@ func inputSerialLoop(port string, baudrate int, msg chan externalMaster, inStats
 	}
 }
 
-func inputLoop(listen string, inputStatusCh chan inputStats) {
-	masterCh := make(chan externalMaster, 1)
-
-	// Use ":" to decide if this is UDP address or serial device
-	if len(strings.Split(listen, ":")) > 1 {
-		// Start listening on UDP
-		go inputUDPLoop(listen, masterCh, inputStatusCh)
-	} else {
-		baudrate := 0
-		// Is the baudrate specified?
-		parts := strings.Split(listen, "@")
-		if len(parts) > 1 {
-			b, err := strconv.Atoi(parts[1])
-			if err != nil {
-				fmt.Printf("Unable to parse baudrate: %s as numeric value\n", parts[1])
-				os.Exit(1)
-			}
-			baudrate = b
-			listen = parts[0]
-		}
-		// Start listening on serial port
-		go inputSerialLoop(listen, baudrate, masterCh, inputStatusCh)
-	}
+func inputLoop(masterCh chan externalMaster, inputStatusCh chan inputStats) {
 
 	for {
 		select {
