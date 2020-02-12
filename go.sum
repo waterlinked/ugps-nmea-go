@@ -1,5 +1,7 @@
 github.com/adrianmo/go-nmea v1.1.0 h1:0NILSj14nj6LvVQHo/afHbyPgGz5qvp5PM6jmMyAQzY=
 github.com/adrianmo/go-nmea v1.1.0/go.mod h1:HHPxPAm2kmev+61qmkZh7xgZF/7qHtSpsWppip2Ipv8=
+github.com/adrianmo/go-nmea v1.1.1-0.20200204181937-d0c00807cb5b h1:C7kHoeY+8S2RhBJmyijuyrAmW5+iLFDYu2jI53bZvwc=
+github.com/adrianmo/go-nmea v1.1.1-0.20200204181937-d0c00807cb5b/go.mod h1:unsZUyxle3sYuVytxYAkVeIJttLbB3KZexc/A/vlnBI=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/gizak/termui v3.1.0+incompatible h1:N3CFm+j087lanTxPpHOmQs0uS3s5I9TxoAFy6DqPqv8=

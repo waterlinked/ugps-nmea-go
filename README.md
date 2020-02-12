@@ -16,7 +16,7 @@ The application also reads the latitude/longitude of the Locator from the Underw
 |------|----------|
 | nmea_ugps_linux_armv6 | Linux ARMv6 - Raspberry PI etc |
 | nmea_ugps_linux_amd64 | Linux 64 bit |
-| nmea_ugps_windows_amd64 | Windows 64 bit |
+| nmea_ugps_windows_amd64.exe | Windows 64 bit |
 
 ## Running
 

@@ -48,24 +48,32 @@ func main() {
 	}
 	defer ui.Close()
 
+	y := 0
+	height := 5
+
 	p := widgets.NewParagraph()
 	p.Title = "Water Linked Underwater GPS NMEA bridge"
 	p.Text = fmt.Sprintf("PRESS q TO QUIT\nIn : %s\nOut: %s", listen, output)
-	p.SetRect(0, 0, 80, 5)
+	p.SetRect(0, y, 80, height)
+	y += height
 	p.TextStyle.Fg = ui.ColorWhite
 	p.BorderStyle.Fg = ui.ColorCyan
 
 	inpStatus := widgets.NewParagraph()
 	inpStatus.Title = "Input status"
 	inpStatus.Text = "Waiting for data"
-	inpStatus.SetRect(0, 5, 80, 10)
+	height = 12
+	inpStatus.SetRect(0, y, 80, y+height)
+	y += height
 	inpStatus.TextStyle.Fg = ui.ColorGreen
 	inpStatus.BorderStyle.Fg = ui.ColorCyan
 
 	outStatus := widgets.NewParagraph()
 	outStatus.Title = "Output status"
 	outStatus.Text = "Waiting for data"
-	outStatus.SetRect(0, 10, 80, 15)
+	height = 10
+	outStatus.SetRect(0, y, 80, y+height)
+	y += height
 	outStatus.TextStyle.Fg = ui.ColorGreen
 	outStatus.BorderStyle.Fg = ui.ColorCyan
 
@@ -78,22 +86,24 @@ func main() {
 	for {
 		select {
 		case instats := <-inStatusCh:
+			inpStatus.TextStyle.Fg = ui.ColorGreen
+			inpStatus.Text = fmt.Sprintf("Supported NMEA sentences received:\n * GGA: %d\n * HDT: %d\n * THS: %d\nSent sucessfully to UGPS: %d",
+				instats.typeGga, instats.typeHdt, instats.typeThs, instats.sendOk)
+			if instats.typeHdt > 0 && instats.typeThs > 0 {
+				inpStatus.Text += "\nWarning: BOTH HDT and THS received, this can give jumpy orientation"
+			}
 			if instats.isErr {
 				inpStatus.TextStyle.Fg = ui.ColorRed
-				inpStatus.Text = fmt.Sprintf("%s", instats.errorMsg)
-			} else {
-				inpStatus.TextStyle.Fg = ui.ColorGreen
-				inpStatus.Text = fmt.Sprintf("OK (%d sent)\nGGA: %d\nHDT: %d",
-					instats.sendOk, instats.typeGga, instats.typeHdt)
+				inpStatus.Text += fmt.Sprintf("\n\n%s", instats.errorMsg)
 			}
 			draw()
 		case outstats := <-outStatusCh:
+			outStatus.Text = fmt.Sprintf("%d positions sent to NMEA out", outstats.sendOk)
+			outStatus.TextStyle.Fg = ui.ColorGreen
+
 			if outstats.isErr {
 				outStatus.TextStyle.Fg = ui.ColorRed
-				outStatus.Text = fmt.Sprintf("%v (%d)", outstats.errMsg, outstats.getErr)
-			} else {
-				outStatus.TextStyle.Fg = ui.ColorGreen
-				outStatus.Text = fmt.Sprintf("OK (%d sent)", outstats.sendOk)
+				outStatus.Text += fmt.Sprintf("\n\n%v (%d)", outstats.errMsg, outstats.getErr)
 			}
 			draw()
 		case e := <-uiEvents:

@@ -17,6 +17,7 @@ import (
 type inputStats struct {
 	typeGga  int
 	typeHdt  int
+	typeThs  int
 	isErr    bool
 	errorMsg string
 	sendOk   int
@@ -60,7 +61,11 @@ func parseNMEA(data []byte) (bool, error) {
 		latest.Orientation = m.Heading
 		stats.typeHdt++
 		return true, nil
-
+	case nmea.THS:
+		//debugPrintf("THS: Heading : %f\n", m.Heading)
+		latest.Orientation = m.Heading
+		stats.typeThs++
+		return true, nil
 	}
 	return false, nil
 }
@@ -105,7 +110,6 @@ func inputUDPLoop(listen string, msg chan externalMaster, inStatsCh chan inputSt
 
 			stats.errorMsg = ""
 			stats.isErr = false
-			stats.sendOk++
 			inStatsCh <- stats
 		}
 	}

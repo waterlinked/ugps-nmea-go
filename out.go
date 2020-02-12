@@ -63,7 +63,6 @@ func outputLoop(output string, outStatusCh chan outStats) {
 			os.Exit(1)
 		}
 		defer s.Close()
-		// Start listening on serial port
 		writer = s
 	}
 
