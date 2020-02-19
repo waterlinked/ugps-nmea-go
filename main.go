@@ -34,7 +34,7 @@ func debugPrintf(arguments string, a ...interface{}) {
 
 // deviceIsUDP uses ":" to decide if this is UDP address or serial device
 func deviceIsUDP(device string) bool {
-	return len(strings.Split(listen, ":")) > 1
+	return len(strings.Split(device, ":")) > 1
 }
 
 func baudAndPortFromDevice(device string) (string, int) {
@@ -115,7 +115,7 @@ func main() {
 
 	} else if !sameInOut {
 		// Output to different serial port
-		port, baudrate := baudAndPortFromDevice(listen)
+		port, baudrate := baudAndPortFromDevice(output)
 
 		c := &serial.Config{Name: port, Baud: baudrate}
 		s, err := serial.OpenPort(c)
