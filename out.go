@@ -56,7 +56,7 @@ func outputLoop(writer io.Writer, outStatusCh chan outStats) {
 		}
 
 		out := gga.Serialize()
-		_, err = fmt.Fprintf(writer, "%s\n", out)
+		_, err = fmt.Fprintf(writer, "%s\r\n", out)
 		if err != nil {
 			stats.isErr = true
 			stats.errMsg = fmt.Sprintf("NMEA out: %v", err)
