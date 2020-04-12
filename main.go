@@ -17,9 +17,10 @@ import (
 )
 
 var (
-	listen  string
-	output  string
-	verbose bool
+	listen   string
+	output   string
+	sentence string
+	verbose  bool
 
 	Version  string = "0.0.0"
 	BuildNum string = "local"
@@ -54,10 +55,26 @@ func baudAndPortFromDevice(device string) (string, int) {
 	return port, baudrate
 }
 
+func keysForMap(m map[string]outSerializer) string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	joined := strings.Join(keys, ", ")
+	return joined
+}
+
 func main() {
+	// Mapping sentence names to what serializer to use
+	availableSerializers := make(map[string]outSerializer)
+	availableSerializers["RATLL"] = tllSerializer{}
+	availableSerializers["GPGGA"] = ggaSerializer{}
+	supportedSentences := keysForMap(availableSerializers)
+
 	fmt.Printf("Water Linked NMEA UGPS bridge (v%s %s.%s)\n", Version, BuildNum, SHA)
 	flag.StringVar(&listen, "i", "0.0.0.0:7777", "UDP device and port (host:port) OR serial device (COM7 /dev/ttyUSB1@4800) to listen for NMEA input. ")
 	flag.StringVar(&output, "o", "", "UDP device and port (host:port) OR serial device (COM7 /dev/ttyUSB1) to send NMEA output. ")
+	flag.StringVar(&sentence, "sentence", "GPGGA", "NMEA output sentence to use. Supported: "+supportedSentences)
 	flag.StringVar(&baseURL, "url", "http://192.168.2.94", "URL of Underwater GPS")
 	//flag.BoolVar(&verbose, "v", false, "verbose")
 	flag.Parse()
@@ -66,6 +83,12 @@ func main() {
 	sameInOut := (listen == output) && !deviceIsUDP(listen)
 	if sameInOut {
 		fmt.Println("Same port for input and output", listen)
+	}
+
+	serializer, exists := availableSerializers[sentence]
+	if !exists {
+		fmt.Printf("Unsupported setence '%s'. Supported are: %s\n", sentence, supportedSentences)
+		os.Exit(1)
 	}
 
 	// Channels
@@ -128,7 +151,7 @@ func main() {
 	}
 
 	if writer != nil {
-		go outputLoop(writer, outStatusCh)
+		go outputLoop(writer, outStatusCh, serializer)
 	}
 
 	RunUI(inStatusCh, outStatusCh)

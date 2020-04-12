@@ -4,7 +4,7 @@ BUILD_FOLDER=build
 BINARY=${BUILD_FOLDER}/nmea_ugps
 
 # Pass variables for version number, sha id and build number
-VERSION=1.1.1
+VERSION=1.2.0
 SHA=$(shell git rev-parse --short HEAD)
 # Set fallback build num if not set by environment variable
 BUILDNUM?=local
@@ -28,4 +28,4 @@ test:
 clean:
 	rm -r ${BUILD_FOLDER}
 
-.PHONY: all clean build
+.PHONY: all clean build test

@@ -5,8 +5,6 @@ import (
 	"io"
 	"math"
 	"time"
-
-	"github.com/pilebones/go-nmea"
 )
 
 type outStats struct {
@@ -19,11 +17,13 @@ type outStats struct {
 
 const updateSeconds = 10
 
-func outputLoop(writer io.Writer, outStatusCh chan outStats) {
+func outputLoop(writer io.Writer, outStatusCh chan outStats, ser outSerializer) {
 	var prevLat float64
 	var prevLon float64
 
 	var stats outStats
+
+	var out string
 
 	for {
 		time.Sleep(100 * time.Millisecond)
@@ -33,6 +33,10 @@ func outputLoop(writer io.Writer, outStatusCh chan outStats) {
 			stats.errMsg = fmt.Sprintf("ERR get position from UGPS: %v", err)
 			stats.getErr++
 			outStatusCh <- stats
+
+			out = ser.noPosition()
+			fmt.Fprintf(writer, "%s\r\n", out)
+
 			continue
 		}
 		stats.getOk++
@@ -46,16 +50,8 @@ func outputLoop(writer io.Writer, outStatusCh chan outStats) {
 		prevLat = pos.Lat
 		prevLon = pos.Lon
 
-		gga := nmea.GPGGA{
-			TimeUTC:            time.Now().UTC(),
-			Latitude:           nmea.LatLong(pos.Lat),
-			Longitude:          nmea.LatLong(pos.Lon),
-			QualityIndicator:   nmea.QualityIndicator(pos.FixQuality),
-			NbOfSatellitesUsed: uint64(pos.NumSats),
-			Altitude:           0,
-		}
+		out := ser.serialize(pos)
 
-		out := gga.Serialize()
 		_, err = fmt.Fprintf(writer, "%s\r\n", out)
 		if err != nil {
 			stats.isErr = true
