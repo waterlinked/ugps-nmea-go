@@ -21,10 +21,18 @@ function once {
 
 	sleep 1
 	send "\$GPHDT,274.07,T*03"
+	#send "\$HCHDM,277.19,M*13"
 
 	sleep 1
 	#send "\$GPTHS,338.01,A*36"
 	send "\$GPTHS,338.01,A*0E"
+
+	sleep 1
+	#send "\$GPTHS,338.01,A*36"
+	send "\$HCHDM,276.71,M*1C"
+
+	sleep 1
+	send "\$GPHDT,274.07,T*03"
 
 }
 
@@ -36,4 +44,3 @@ while [[ 1 ]]; do
 	once
 	sleep 1
 done
-
