@@ -210,8 +210,8 @@ func RunUI(inStatusCh chan inputStats, outStatusCh chan outStats) {
 		select {
 		case instats := <-inStatusCh:
 			inpStatus.TextStyle.Fg = ui.ColorGreen
-			inpStatus.Text = fmt.Sprintf("Supported NMEA sentences received:\n * GGA: %d\n * HDT: %d\n * THS: %d\nSent sucessfully to UGPS: %d",
-				instats.typeGga, instats.typeHdt, instats.typeThs, instats.sendOk)
+			inpStatus.Text = fmt.Sprintf("Supported NMEA sentences received:\n * GGA: %d\n * HDT: %d\n * HDM: %d\n * THS: %d\nSent sucessfully to UGPS: %d",
+				instats.typeGga, instats.typeHdt, instats.typeHdm, instats.typeThs, instats.sendOk)
 			if instats.typeHdt > 0 && instats.typeThs > 0 {
 				inpStatus.Text += "\nWarning: BOTH HDT and THS received, this can give jumpy orientation"
 			}
