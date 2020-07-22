@@ -9,13 +9,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/adrianmo/go-nmea"
+	"github.com/waterlinked/go-nmea"
 	"github.com/tarm/serial"
 )
 
 type inputStats struct {
 	typeGga  int
 	typeHdt  int
+	typeHdm  int
 	typeThs  int
 	isErr    bool
 	errorMsg string
@@ -59,6 +60,11 @@ func parseNMEA(data []byte) (bool, error) {
 		//debugPrintf("HDT: Heading : %f\n", m.Heading)
 		latest.Orientation = m.Heading
 		stats.typeHdt++
+		return true, nil
+	case nmea.HDM:
+		//debugPrintf("HDM: Heading : %f\n", m.Heading)
+		latest.Orientation = m.Heading
+		stats.typeHdm++
 		return true, nil
 	case nmea.THS:
 		//debugPrintf("THS: Heading : %f\n", m.Heading)

@@ -157,6 +157,14 @@ func main() {
 	RunUI(inStatusCh, outStatusCh)
 }
 
+// Bool2Int returns 1 if true, else 0
+func Bool2Int(val bool) int {
+	if val {
+		return 1
+	}
+	return 0
+}
+
 func RunUI(inStatusCh chan inputStats, outStatusCh chan outStats) {
 	// Let the goroutines initialize before starting GUI
 	time.Sleep(50 * time.Millisecond)
@@ -210,10 +218,11 @@ func RunUI(inStatusCh chan inputStats, outStatusCh chan outStats) {
 		select {
 		case instats := <-inStatusCh:
 			inpStatus.TextStyle.Fg = ui.ColorGreen
-			inpStatus.Text = fmt.Sprintf("Supported NMEA sentences received:\n * GGA: %d\n * HDT: %d\n * THS: %d\nSent sucessfully to UGPS: %d",
-				instats.typeGga, instats.typeHdt, instats.typeThs, instats.sendOk)
-			if instats.typeHdt > 0 && instats.typeThs > 0 {
-				inpStatus.Text += "\nWarning: BOTH HDT and THS received, this can give jumpy orientation"
+			inpStatus.Text = fmt.Sprintf("Supported NMEA sentences received:\n * GGA: %d\n * HDT: %d\n * HDM: %d\n * THS: %d\nSent sucessfully to UGPS: %d",
+				instats.typeGga, instats.typeHdt, instats.typeHdm, instats.typeThs, instats.sendOk)
+			numberOfHeadings := Bool2Int(instats.typeHdt > 0) + Bool2Int(instats.typeThs > 0) + Bool2Int(instats.typeHdm > 0)
+			if numberOfHeadings > 1 {
+				inpStatus.Text += "\nWarning: Multiple headings received, should have only 1. This will probably give jumpy positioning."
 			}
 			if instats.isErr {
 				inpStatus.TextStyle.Fg = ui.ColorRed
