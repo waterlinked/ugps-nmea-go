@@ -17,19 +17,29 @@ import (
 )
 
 var (
-	listen   string
-	output   string
-	sentence string
-	verbose  bool
+	listen          string
+	headingSentence string
+	output          string
+	sentence        string
+	debug           bool
 
 	Version  string = "0.0.0"
 	BuildNum string = "local"
 	SHA      string = "local"
 )
 
+const dbgLen = 5
+
+var dbgMsg []string = make([]string, 0)
+
 func debugPrintf(arguments string, a ...interface{}) {
-	if verbose {
-		log.Printf(arguments, a...)
+	if debug {
+		if len(dbgMsg) > dbgLen {
+			dbgMsg = dbgMsg[1:dbgLen]
+		}
+		s := time.Now().Format("15:04:05") + " " + fmt.Sprintf(arguments, a...)
+		dbgMsg = append(dbgMsg, strings.TrimSpace(s))
+		//log.Printf(arguments, a...)
 	}
 }
 
@@ -55,28 +65,26 @@ func baudAndPortFromDevice(device string) (string, int) {
 	return port, baudrate
 }
 
-func keysForMap(m map[string]outSerializer) string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	joined := strings.Join(keys, ", ")
-	return joined
-}
-
 func main() {
 	// Mapping sentence names to what serializer to use
 	availableSerializers := make(map[string]outSerializer)
 	availableSerializers["RATLL"] = tllSerializer{}
 	availableSerializers["GPGGA"] = ggaSerializer{}
-	supportedSentences := keysForMap(availableSerializers)
+	supportedSentences := keysForMapS(availableSerializers)
+
+	availableHeadingSentences := make(map[string]headingParser)
+	availableHeadingSentences["HDM"] = &hdmParser{}
+	availableHeadingSentences["HDT"] = &hdtParser{}
+	availableHeadingSentences["THS"] = &thsParser{}
+	supportedHeadings := keysForMapP(availableHeadingSentences)
 
 	fmt.Printf("Water Linked NMEA UGPS bridge (v%s %s.%s)\n", Version, BuildNum, SHA)
 	flag.StringVar(&listen, "i", "0.0.0.0:7777", "UDP device and port (host:port) OR serial device (COM7 /dev/ttyUSB1@4800) to listen for NMEA input. ")
 	flag.StringVar(&output, "o", "", "UDP device and port (host:port) OR serial device (COM7 /dev/ttyUSB1) to send NMEA output. ")
 	flag.StringVar(&sentence, "sentence", "GPGGA", "NMEA output sentence to use. Supported: "+supportedSentences)
+	flag.StringVar(&headingSentence, "heading", "HDT", "Input sentence type to use for heading. Supported: "+supportedHeadings)
 	flag.StringVar(&baseURL, "url", "http://192.168.2.94", "URL of Underwater GPS")
-	//flag.BoolVar(&verbose, "v", false, "verbose")
+	flag.BoolVar(&debug, "d", false, "debug")
 	flag.Parse()
 
 	// Same serial port for input and output?
@@ -85,9 +93,15 @@ func main() {
 		fmt.Println("Same port for input and output", listen)
 	}
 
-	serializer, exists := availableSerializers[sentence]
+	serializer, exists := availableSerializers[strings.ToUpper(sentence)]
 	if !exists {
-		fmt.Printf("Unsupported setence '%s'. Supported are: %s\n", sentence, supportedSentences)
+		fmt.Printf("Unsupported sentence '%s'. Supported are: %s\n", sentence, supportedSentences)
+		os.Exit(1)
+	}
+
+	hParser, exists := availableHeadingSentences[strings.ToUpper(headingSentence)]
+	if !exists {
+		fmt.Printf("Unsupported heading sentence '%s'. Supported are: %s\n", headingSentence, supportedHeadings)
 		os.Exit(1)
 	}
 
@@ -102,7 +116,7 @@ func main() {
 	// Setup input
 	if deviceIsUDP(listen) {
 		// Input from UDP
-		go inputUDPLoop(listen, masterCh, inStatusCh)
+		go inputUDPLoop(listen, hParser, masterCh, inStatusCh)
 	} else {
 		// Input from serial port
 		port, baudrate := baudAndPortFromDevice(listen)
@@ -115,7 +129,7 @@ func main() {
 		}
 		defer s.Close()
 
-		go inputSerialLoop(s, masterCh, inStatusCh)
+		go inputSerialLoop(s, hParser, masterCh, inStatusCh)
 		if sameInOut {
 			// Output is to same serial port as input
 			writer = s
@@ -165,6 +179,7 @@ func Bool2Int(val bool) int {
 	return 0
 }
 
+// RunUI updates the GUI
 func RunUI(inStatusCh chan inputStats, outStatusCh chan outStats) {
 	// Let the goroutines initialize before starting GUI
 	time.Sleep(50 * time.Millisecond)
@@ -175,11 +190,12 @@ func RunUI(inStatusCh chan inputStats, outStatusCh chan outStats) {
 
 	y := 0
 	height := 5
+	width := 80
 
 	p := widgets.NewParagraph()
 	p.Title = "Water Linked Underwater GPS NMEA bridge"
 	p.Text = fmt.Sprintf("PRESS q TO QUIT\nIn : %s\nOut: %s", listen, output)
-	p.SetRect(0, y, 80, height)
+	p.SetRect(0, y, width, height)
 	y += height
 	p.TextStyle.Fg = ui.ColorWhite
 	p.BorderStyle.Fg = ui.ColorCyan
@@ -188,7 +204,7 @@ func RunUI(inStatusCh chan inputStats, outStatusCh chan outStats) {
 	inpStatus.Title = "Input status"
 	inpStatus.Text = "Waiting for data"
 	height = 12
-	inpStatus.SetRect(0, y, 80, y+height)
+	inpStatus.SetRect(0, y, width, y+height)
 	y += height
 	inpStatus.TextStyle.Fg = ui.ColorGreen
 	inpStatus.BorderStyle.Fg = ui.ColorCyan
@@ -200,13 +216,26 @@ func RunUI(inStatusCh chan inputStats, outStatusCh chan outStats) {
 		outStatus.Text = "Output not enabled"
 	}
 	height = 10
-	outStatus.SetRect(0, y, 80, y+height)
+	outStatus.SetRect(0, y, width, y+height)
 	y += height
 	outStatus.TextStyle.Fg = ui.ColorGreen
 	outStatus.BorderStyle.Fg = ui.ColorCyan
 
+	height = 15
+	dbgText := widgets.NewList()
+	dbgText.Title = "Debug"
+	dbgText.Rows = dbgMsg
+	dbgText.WrapText = true
+	dbgText.SetRect(0, y, width, y+height)
+	y += height
+	//dbgText.TextStyle.Fg = ui.ColorGreen
+	dbgText.BorderStyle.Fg = ui.ColorCyan
+
 	draw := func() {
 		ui.Render(p, inpStatus, outStatus)
+		if debug {
+			ui.Render(dbgText)
+		}
 	}
 
 	// Intial draw before any events have occured
@@ -218,15 +247,19 @@ func RunUI(inStatusCh chan inputStats, outStatusCh chan outStats) {
 		select {
 		case instats := <-inStatusCh:
 			inpStatus.TextStyle.Fg = ui.ColorGreen
-			inpStatus.Text = fmt.Sprintf("Supported NMEA sentences received:\n * GGA: %d\n * HDT: %d\n * HDM: %d\n * THS: %d\nSent sucessfully to UGPS: %d",
-				instats.typeGga, instats.typeHdt, instats.typeHdm, instats.typeThs, instats.sendOk)
-			numberOfHeadings := Bool2Int(instats.typeHdt > 0) + Bool2Int(instats.typeThs > 0) + Bool2Int(instats.typeHdm > 0)
-			if numberOfHeadings > 1 {
-				inpStatus.Text += "\nWarning: Multiple headings received, should have only 1. This will probably give jumpy positioning."
-			}
+			inpStatus.Text = fmt.Sprintf(
+				"Supported NMEA sentences received:\n"+
+					" * Position   : %s\n"+
+					" * Heading    : %s\n"+
+					" * Parse error: %d\n"+
+					"Sent sucessfully to UGPS: %d\n\n"+
+					"%s",
+				instats.posDesc, instats.headDesc, instats.unparsableCount, instats.sendOk, instats.errorMsg)
 			if instats.isErr {
 				inpStatus.TextStyle.Fg = ui.ColorRed
-				inpStatus.Text += fmt.Sprintf("\n\n%s", instats.errorMsg)
+			}
+			if debug {
+				dbgText.Rows = dbgMsg
 			}
 			draw()
 		case outstats := <-outStatusCh:
@@ -237,6 +270,9 @@ func RunUI(inStatusCh chan inputStats, outStatusCh chan outStats) {
 				outStatus.TextStyle.Fg = ui.ColorRed
 				outStatus.Text += fmt.Sprintf("\n\n%v (%d)", outstats.errMsg, outstats.getErr)
 			}
+			if debug {
+				dbgText.Rows = dbgMsg
+			}
 			draw()
 		case e := <-uiEvents:
 			switch e.ID {
@@ -245,4 +281,22 @@ func RunUI(inStatusCh chan inputStats, outStatusCh chan outStats) {
 			}
 		}
 	}
+}
+
+func keysForMapS(m map[string]outSerializer) string {
+	keys := make([]string, 0)
+	for k := range m {
+		keys = append(keys, k)
+	}
+	joined := strings.Join(keys, ", ")
+	return joined
+}
+
+func keysForMapP(m map[string]headingParser) string {
+	keys := make([]string, 0)
+	for k := range m {
+		keys = append(keys, k)
+	}
+	joined := strings.Join(keys, ", ")
+	return joined
 }

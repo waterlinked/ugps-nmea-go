@@ -9,18 +9,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/waterlinked/go-nmea"
 	"github.com/tarm/serial"
+	"github.com/waterlinked/go-nmea"
 )
 
 type inputStats struct {
-	typeGga  int
-	typeHdt  int
-	typeHdm  int
-	typeThs  int
-	isErr    bool
-	errorMsg string
-	sendOk   int
+	posDesc         string
+	posCount        int
+	headDesc        string
+	unparsableCount int
+	isErr           bool
+	errorMsg        string
+	sendOk          int
 }
 
 const missingDataTimeout = 10
@@ -31,21 +31,23 @@ var (
 )
 
 // parseNMEA takes a string and return true if new data, else false
-func parseNMEA(data []byte) (bool, error) {
+func parseNMEA(data []byte, h headingParser) (bool, error) {
 	line := strings.TrimSpace(string(data))
 
 	s, err := nmea.Parse(line)
 	if err != nil {
-		return false, err
+		debugPrintf("Parse err: %s (%s)", err, line)
+		stats.unparsableCount++
+		return false, nil
 	}
 
 	switch m := s.(type) {
 	case nmea.GPGGA:
-		//debugPrintf("GGA: Lat/lon : %s %s\n", nmea.FormatGPS(m.Latitude), nmea.FormatGPS(m.Longitude))
+		debugPrintf("GGA: Lat/lon : %s %s\n", nmea.FormatGPS(m.Latitude), nmea.FormatGPS(m.Longitude))
 
 		fix, err := strconv.ParseFloat(m.FixQuality, 64)
 		if err != nil {
-			log.Printf("GGA invalid fix quality: %s -> %v\n", m.FixQuality, err)
+			debugPrintf("GGA invalid fix quality: %s -> %v\n", m.FixQuality, err)
 			fix = 0
 		}
 		latest.Lat = m.Latitude
@@ -53,29 +55,17 @@ func parseNMEA(data []byte) (bool, error) {
 		latest.NumSats = float64(m.NumSatellites)
 		latest.FixQuality = fix
 		latest.Hdop = m.HDOP
-		stats.typeGga++
-		return true, nil
-
-	case nmea.GPHDT:
-		//debugPrintf("HDT: Heading : %f\n", m.Heading)
-		latest.Orientation = m.Heading
-		stats.typeHdt++
-		return true, nil
-	case nmea.HDM:
-		//debugPrintf("HDM: Heading : %f\n", m.Heading)
-		latest.Orientation = m.Heading
-		stats.typeHdm++
-		return true, nil
-	case nmea.THS:
-		//debugPrintf("THS: Heading : %f\n", m.Heading)
-		latest.Orientation = m.Heading
-		stats.typeThs++
+		//stats.typeGga++
+		stats.posCount++
+		stats.posDesc = fmt.Sprintf("GGA: %d", stats.posCount)
 		return true, nil
 	}
-	return false, nil
+	success, err := h.parseNMEA(s)
+	stats.headDesc = h.String()
+	return success, err
 }
 
-func inputUDPLoop(listen string, msg chan externalMaster, inStatsCh chan inputStats) {
+func inputUDPLoop(listen string, hParser headingParser, msg chan externalMaster, inStatsCh chan inputStats) {
 	udpAddr, err := net.ResolveUDPAddr("udp4", listen)
 	if err != nil {
 		log.Fatal(err)
@@ -105,7 +95,7 @@ func inputUDPLoop(listen string, msg chan externalMaster, inStatsCh chan inputSt
 			continue
 		}
 
-		gotUpdate, err := parseNMEA(buffer[:n])
+		gotUpdate, err := parseNMEA(buffer[:n], hParser)
 		if err != nil {
 			stats.errorMsg = fmt.Sprintf("%v", err)
 			stats.isErr = true
@@ -120,7 +110,7 @@ func inputUDPLoop(listen string, msg chan externalMaster, inStatsCh chan inputSt
 	}
 }
 
-func inputSerialLoop(s *serial.Port, msg chan externalMaster, inStatsCh chan inputStats) {
+func inputSerialLoop(s *serial.Port, hParser headingParser, msg chan externalMaster, inStatsCh chan inputStats) {
 
 	scanner := bufio.NewReader(s)
 	for {
@@ -131,7 +121,7 @@ func inputSerialLoop(s *serial.Port, msg chan externalMaster, inStatsCh chan inp
 			inStatsCh <- stats
 			continue
 		}
-		gotUpdate, err := parseNMEA(line)
+		gotUpdate, err := parseNMEA(line, hParser)
 
 		if err != nil {
 			stats.errorMsg = fmt.Sprintf("%v", err)
@@ -160,6 +150,7 @@ func inputLoop(masterCh chan externalMaster, inputStatusCh chan inputStats) {
 			if err == nil {
 				stats.sendOk++
 			} else {
+				debugPrintf("%v", err)
 				stats.isErr = true
 				stats.errorMsg = fmt.Sprintf("%v", err)
 				inputStatusCh <- stats

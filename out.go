@@ -31,6 +31,7 @@ func outputLoop(writer io.Writer, outStatusCh chan outStats, ser outSerializer) 
 		if err != nil {
 			stats.isErr = true
 			stats.errMsg = fmt.Sprintf("ERR get position from UGPS: %v", err)
+			debugPrintf(stats.errMsg)
 			stats.getErr++
 			outStatusCh <- stats
 
@@ -56,6 +57,7 @@ func outputLoop(writer io.Writer, outStatusCh chan outStats, ser outSerializer) 
 		if err != nil {
 			stats.isErr = true
 			stats.errMsg = fmt.Sprintf("NMEA out: %v", err)
+			debugPrintf(stats.errMsg)
 		} else {
 			stats.isErr = false
 			stats.sendOk++

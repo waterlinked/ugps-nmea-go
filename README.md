@@ -23,6 +23,9 @@ The application also reads the latitude/longitude of the Locator from the Underw
 The application is run on the command line and can be configured via arguments. The arguments are:
 
 ```
+  -d	debug
+  -heading string
+    	Input sentence type to use for heading. Supported: HDM, HDT, THS (default "HDT")
   -i string
     	UDP device and port (host:port) OR serial device (COM7 /dev/ttyUSB1@4800) to listen for NMEA input.  (default "0.0.0.0:7777")
   -o string
@@ -33,16 +36,16 @@ The application is run on the command line and can be configured via arguments. 
     	URL of Underwater GPS (default "http://192.168.2.94")
 ```
 
-Example using UART input from /dev/ttyUSB2 with baud rate 4800 and sending the output via UDP on port 9999 on localhost.
+Example using UART input from /dev/ttyUSB2 with baud rate 4800 using THS sentence for heading and sending the output via UDP on port 2947 on localhost.
 
 ```
-./nmea_ugps_linux_amd64 -i /dev/ttyUSB2@4800 -o 127.0.0.1:9999
+./nmea_ugps_linux_amd64 -i /dev/ttyUSB2@4800 -o 127.0.0.1:2947 -heading THS
 ```
 
 On Windows, the easiest is to create a `start.bat` file, edit it with notepad to the desired settings and then double-click it in Explorer to start it. Example of what the file can look like:
 
 ```
-nmea_ugps_windows_amd64.exe -i COM1 -o 127.0.0.1:2947
+nmea_ugps_windows_amd64.exe -i COM1@4800 -o 127.0.0.1:2947 -heading HDM
 pause
 ```
 
@@ -58,9 +61,9 @@ When running the application it typically looks like this:
 └──────────────────────────────────────────────────────────────────────────────┘
 ┌─Input status─────────────────────────────────────────────────────────────────┐
 │Supported NMEA sentences received:                                            │
-│ * GGA: 5                                                                     │
-│ * HDT: 6                                                                     │
-│ * THS: 0                                                                     │
+│ * Position   : GGA: 5                                                        │
+│ * Heading    : HDT: 6                                                        │
+│ * Parse error: 0                                                             │
 │Sent sucessfully to UGPS: 10                                                  │
 │                                                                              │
 │                                                                              │
