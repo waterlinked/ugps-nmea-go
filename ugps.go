@@ -8,9 +8,9 @@ import (
 	"time"
 )
 
-type sattelitePosition struct {
-	Lat         float64 `json:"lat"`
-	Lon         float64 `json:"lon"`
+type GlobalPosition struct {
+	Latitude    float64 `json:"lat"`
+	Longitude   float64 `json:"lon"`
 	Cog         float64 `json:"cog"`
 	FixQuality  float64 `json:"fix_quality"`
 	Hdop        float64 `json:"hdop"`
@@ -19,7 +19,7 @@ type sattelitePosition struct {
 	Sog         float64 `json:"sog"`
 }
 
-type acousticPosition struct {
+type AcousticPosition struct {
 	X float64 `json:"x"`
 	Y float64 `json:"y"`
 	Z float64 `json:"z"`
@@ -60,24 +60,24 @@ func getJSON(url string, target interface{}) error {
 	return json.NewDecoder(r.Body).Decode(target)
 }
 
-func getGlobalPosition() (sattelitePosition, error) {
+func getGlobalPosition() (GlobalPosition, error) {
 	url := baseURL + "/api/v1/position/global"
 
-	var pos sattelitePosition
-	if err := getJSON(url, &pos); err != nil {
-		return pos, err
+	var globalPosition GlobalPosition
+	if err := getJSON(url, &globalPosition); err != nil {
+		return globalPosition, err
 	}
-	return pos, nil
+	return globalPosition, nil
 }
 
-func getAcousticPosition() (acousticPosition, error) {
+func getAcousticPosition() (AcousticPosition, error) {
 	url := baseURL + "/api/v1/position/acoustic/filtered"
 
-	var pos acousticPosition
-	if err := getJSON(url, &pos); err != nil {
-		return pos, err
+	var acousticPosition AcousticPosition
+	if err := getJSON(url, &acousticPosition); err != nil {
+		return acousticPosition, err
 	}
-	return pos, nil
+	return acousticPosition, nil
 }
 
 func setDepth(depth float64) error {

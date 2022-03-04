@@ -7,10 +7,10 @@ import (
 	"time"
 )
 
-// LatLng is Lattitude or Longitude
+// Latitude or Longitude
 type LatLng float64
 
-// DM is returning degrees and minutes
+// Degrees and minutes
 func (l LatLng) DM() (int, float64) {
 	if l < 0 {
 		l = -l
@@ -22,8 +22,7 @@ func (l LatLng) DM() (int, float64) {
 	return int(d), m
 }
 
-// Serialize returns a serialized version of the LatLng
-func (l LatLng) Serialize() string {
+func (l LatLng) Serialise() string {
 	if l == 0 {
 		return ""
 	}
@@ -90,22 +89,22 @@ type RATLL struct {
 	TargetStatus byte      // L=lost, Q=acuisition, T=tracking
 }
 
-func (m RATLL) Serialize() string {
+func (sentence RATLL) Serialise() string {
 
 	fields := make([]string, 0)
 	fields = append(fields, "RATLL")
 
-	fields = append(fields, fmt.Sprintf("%d", m.TargetNum))
+	fields = append(fields, fmt.Sprintf("%d", sentence.TargetNum))
 
 	fields = append(fields,
-		strings.Trim(m.Latitude.Serialize(), "0"), m.Latitude.CardinalPoint(true),
-		strings.Trim(m.Longitude.Serialize(), "0"), m.Longitude.CardinalPoint(false),
+		strings.Trim(sentence.Latitude.Serialise(), "0"), sentence.Latitude.CardinalPoint(true),
+		strings.Trim(sentence.Longitude.Serialise(), "0"), sentence.Longitude.CardinalPoint(false),
 	)
 
-	fields = append(fields, fmt.Sprintf("%s", m.TargetName))
+	fields = append(fields, fmt.Sprintf("%s", sentence.TargetName))
 
-	fields = append(fields, m.TimeUTC.Format("150405.000"))
-	if m.TargetStatus == 'T' {
+	fields = append(fields, sentence.TimeUTC.Format("150405.000"))
+	if sentence.TargetStatus == 'T' {
 		fields = append(fields, "T")
 	} else {
 		fields = append(fields, "L")
@@ -149,37 +148,37 @@ Example: $GPGGA,015540.000,3150.68378,N,11711.93139,E,1,17,0.6,0051.6,M,0.0,M,,*
 */
 
 type GAGGA struct {
-	TimeUTC            time.Time
-	Latitude           LatLng
-	Longitude          LatLng
-	QualityIndicator   float64
-	NbOfSatellitesUsed int
-	Altitude           float64
-	Hdop               float64
+	TimeUTC                time.Time
+	Latitude               LatLng
+	Longitude              LatLng
+	QualityIndicator       float64
+	NumberOfSatellitesUsed int
+	Altitude               float64
+	Hdop                   float64
 }
 
-func (m GAGGA) Serialize() string {
+func (sentence GAGGA) Serialise() string {
 
 	fields := make([]string, 0)
 	fields = append(fields, "GPGGA")
 
-	fields = append(fields, m.TimeUTC.Format("150405.000"))
+	fields = append(fields, sentence.TimeUTC.Format("150405.000"))
 
 	fields = append(fields,
-		strings.Trim(m.Latitude.Serialize(), "0"), m.Latitude.CardinalPoint(true),
-		strings.Trim(m.Longitude.Serialize(), "0"), m.Longitude.CardinalPoint(false),
+		strings.Trim(sentence.Latitude.Serialise(), "0"), sentence.Latitude.CardinalPoint(true),
+		strings.Trim(sentence.Longitude.Serialise(), "0"), sentence.Longitude.CardinalPoint(false),
 	)
 
-	fields = append(fields, fmt.Sprintf("%.0f", m.QualityIndicator))
-	fields = append(fields, fmt.Sprintf("%d", m.NbOfSatellitesUsed))
-	if m.Hdop > 0 {
-		fields = append(fields, fmt.Sprintf("%.1f", m.Hdop))
+	fields = append(fields, fmt.Sprintf("%.0f", sentence.QualityIndicator))
+	fields = append(fields, fmt.Sprintf("%d", sentence.NumberOfSatellitesUsed))
+	if sentence.Hdop > 0 {
+		fields = append(fields, fmt.Sprintf("%.1f", sentence.Hdop))
 	} else {
 		fields = append(fields, "")
 	}
-	fields = append(fields, "", "M") // Antenna altitude and unit
-	fields = append(fields, "", "M") // Goid separation and unit
-	fields = append(fields, "", "")  // DGPS age and reference station
+	fields = append(fields, fmt.Sprintf("%.2f", sentence.Altitude), "M")
+	fields = append(fields, "", "M")
+	fields = append(fields, "", "")
 
 	return assembleSentence(fields)
 }

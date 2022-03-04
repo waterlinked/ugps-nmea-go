@@ -4,7 +4,7 @@
 
 This application can be used to let the [Water Linked Underwater GPS](https://waterlinked.com/underwater-gps/) use an external GPS/compass as input GPS and send the Locator position to a chart plotter.
 
-The application reads NMEA 0183 input from a serial/UDP connection and sends it to Water Linked Underwater GPS to allow it to use compass (HDT sentence) and GPS (GGA sentence) as an external source. Once this application is running the Underwater GPS must be configured to use this external source in the [settings](https://waterlinked.github.io/explorer-kit/gui/settings/)
+The application reads NMEA 0183 input from a serial/UDP connection and sends it to Water Linked Underwater GPS to allow it to use compass (HDT sentence) and GPS (GGA sentence) as an external source. Once this application is running the Underwater GPS must be configured to use this external source in the [settings](https://waterlinked.github.io/underwater-gps/gui/settings/)
 
 The application also reads the latitude/longitude of the Locator from the Underwater GPS and sends it via serial or UDP as a NMEA sentence (type of sentence is configurable).
 

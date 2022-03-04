@@ -66,11 +66,10 @@ func baudAndPortFromDevice(device string) (string, int) {
 }
 
 func main() {
-	// Mapping sentence names to what serializer to use
-	availableSerializers := make(map[string]outSerializer)
-	availableSerializers["RATLL"] = tllSerializer{}
-	availableSerializers["GPGGA"] = ggaSerializer{}
-	supportedSentences := keysForMapS(availableSerializers)
+	availableSerialisers := make(map[string]nmeaSerialiser)
+	availableSerialisers["RATLL"] = tllSerialiser{}
+	availableSerialisers["GPGGA"] = ggaSerialiser{}
+	supportedSentences := nmeaSerialisers(availableSerialisers)
 
 	availableHeadingSentences := make(map[string]headingParser)
 	availableHeadingSentences["HDM"] = &hdmParser{}
@@ -93,7 +92,7 @@ func main() {
 		fmt.Println("Same port for input and output", listen)
 	}
 
-	serializer, exists := availableSerializers[strings.ToUpper(sentence)]
+	serialiser, exists := availableSerialisers[strings.ToUpper(sentence)]
 	if !exists {
 		fmt.Printf("Unsupported sentence '%s'. Supported are: %s\n", sentence, supportedSentences)
 		os.Exit(1)
@@ -108,7 +107,6 @@ func main() {
 	// Channels
 	inStatusCh := make(chan inputStats, 1)
 	masterCh := make(chan externalMaster, 1)
-	outStatusCh := make(chan outStats, 1)
 
 	// Output
 	var writer io.Writer = nil
@@ -164,11 +162,12 @@ func main() {
 		writer = s
 	}
 
+	outputter := NewOutputter(writer, serialiser)
 	if writer != nil {
-		go outputLoop(writer, outStatusCh, serializer)
+		go NewOutputter(writer, serialiser).OutputLoop()
 	}
 
-	RunUI(inStatusCh, outStatusCh)
+	RunUI(inStatusCh, outputter.outputStatusChannel)
 }
 
 // Bool2Int returns 1 if true, else 0
@@ -180,7 +179,7 @@ func Bool2Int(val bool) int {
 }
 
 // RunUI updates the GUI
-func RunUI(inStatusCh chan inputStats, outStatusCh chan outStats) {
+func RunUI(inStatusCh chan inputStats, outputStatusChannel chan outputStats) {
 	// Let the goroutines initialize before starting GUI
 	time.Sleep(50 * time.Millisecond)
 	if err := ui.Init(); err != nil {
@@ -262,7 +261,7 @@ func RunUI(inStatusCh chan inputStats, outStatusCh chan outStats) {
 				dbgText.Rows = dbgMsg
 			}
 			draw()
-		case outstats := <-outStatusCh:
+		case outstats := <-outputStatusChannel:
 			outStatus.Text = fmt.Sprintf("%d positions sent to NMEA out", outstats.sendOk)
 			outStatus.TextStyle.Fg = ui.ColorGreen
 
@@ -283,7 +282,7 @@ func RunUI(inStatusCh chan inputStats, outStatusCh chan outStats) {
 	}
 }
 
-func keysForMapS(m map[string]outSerializer) string {
+func nmeaSerialisers(m map[string]nmeaSerialiser) string {
 	keys := make([]string, 0)
 	for k := range m {
 		keys = append(keys, k)
