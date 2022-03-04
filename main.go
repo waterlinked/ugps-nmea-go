@@ -171,7 +171,7 @@ func main() {
 
 	outputter := NewOutputter(writer, serialiser)
 	if writer != nil {
-		go NewOutputter(writer, serialiser).OutputLoop()
+		go outputter.OutputLoop()
 	}
 
 	RunUI(inputEnabled, inStatusCh, outputter.outputStatusChannel)
