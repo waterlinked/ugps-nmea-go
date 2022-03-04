@@ -78,7 +78,7 @@ func main() {
 	supportedHeadings := keysForMapP(availableHeadingSentences)
 
 	fmt.Printf("Water Linked NMEA UGPS bridge (v%s %s.%s)\n", Version, BuildNum, SHA)
-	flag.StringVar(&listen, "i", "0.0.0.0:7777", "UDP device and port (host:port) OR serial device (COM7 /dev/ttyUSB1@4800) to listen for NMEA input. ")
+	flag.StringVar(&listen, "i", "", "UDP device and port (host:port) OR serial device (COM7 /dev/ttyUSB1@4800) to listen for NMEA input. ")
 	flag.StringVar(&output, "o", "", "UDP device and port (host:port) OR serial device (COM7 /dev/ttyUSB1) to send NMEA output. ")
 	flag.StringVar(&sentence, "sentence", "GPGGA", "NMEA output sentence to use. Supported: "+supportedSentences)
 	flag.StringVar(&headingSentence, "heading", "HDT", "Input sentence type to use for heading. Supported: "+supportedHeadings)
@@ -105,6 +105,7 @@ func main() {
 	}
 
 	// Channels
+	inputEnabled := false
 	inStatusCh := make(chan inputStats, 1)
 	masterCh := make(chan externalMaster, 1)
 
@@ -112,9 +113,14 @@ func main() {
 	var writer io.Writer = nil
 
 	// Setup input
-	if deviceIsUDP(listen) {
+	if listen == "" {
+		// No input
+		inputEnabled = false
+	} else if deviceIsUDP(listen) {
 		// Input from UDP
 		go inputUDPLoop(listen, hParser, masterCh, inStatusCh)
+		go inputLoop(masterCh, inStatusCh)
+		inputEnabled = true
 	} else {
 		// Input from serial port
 		port, baudrate := baudAndPortFromDevice(listen)
@@ -132,8 +138,9 @@ func main() {
 			// Output is to same serial port as input
 			writer = s
 		}
+		go inputLoop(masterCh, inStatusCh)
+		inputEnabled = true
 	}
-	go inputLoop(masterCh, inStatusCh)
 
 	// Setup output
 	if output == "" {
@@ -167,7 +174,7 @@ func main() {
 		go NewOutputter(writer, serialiser).OutputLoop()
 	}
 
-	RunUI(inStatusCh, outputter.outputStatusChannel)
+	RunUI(inputEnabled, inStatusCh, outputter.outputStatusChannel)
 }
 
 // Bool2Int returns 1 if true, else 0
@@ -179,7 +186,7 @@ func Bool2Int(val bool) int {
 }
 
 // RunUI updates the GUI
-func RunUI(inStatusCh chan inputStats, outputStatusChannel chan outputStats) {
+func RunUI(inputEnabled bool, inStatusCh chan inputStats, outputStatusChannel chan outputStats) {
 	// Let the goroutines initialize before starting GUI
 	time.Sleep(50 * time.Millisecond)
 	if err := ui.Init(); err != nil {
@@ -201,7 +208,11 @@ func RunUI(inStatusCh chan inputStats, outputStatusChannel chan outputStats) {
 
 	inpStatus := widgets.NewParagraph()
 	inpStatus.Title = "Input status"
-	inpStatus.Text = "Waiting for data"
+	if inputEnabled {
+		inpStatus.Text = "Waiting for data"
+	} else {
+		inpStatus.Text = "Input not enabled"
+	}
 	height = 12
 	inpStatus.SetRect(0, y, width, y+height)
 	y += height
