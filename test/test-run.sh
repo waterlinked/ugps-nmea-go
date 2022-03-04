@@ -1,3 +1,2 @@
 #!/bin/bash
-go run . -url http://127.0.0.1:8080
-
+go run . -d -url https://demo.waterlinked.com -i localhost:7777 -o localhost:2947
