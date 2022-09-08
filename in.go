@@ -31,7 +31,7 @@ var (
 )
 
 // parseNMEA takes a string and return true if new data, else false
-func parseNMEA(data []byte, h headingParser) (bool, error) {
+func parseNMEA(data []byte, headingParse nmeaHeadingParser) (bool, error) {
 	line := strings.TrimSpace(string(data))
 
 	s, err := nmea.Parse(line)
@@ -60,12 +60,12 @@ func parseNMEA(data []byte, h headingParser) (bool, error) {
 		stats.posDesc = fmt.Sprintf("GGA: %d", stats.posCount)
 		return true, nil
 	}
-	success, err := h.parseNMEA(s)
-	stats.headDesc = h.String()
+	success, err := headingParse.parseNMEA(s)
+	stats.headDesc = headingParse.String()
 	return success, err
 }
 
-func inputUDPLoop(listen string, hParser headingParser, msg chan externalMaster, inStatsCh chan inputStats) {
+func inputUDPLoop(listen string, headingParser nmeaHeadingParser, msg chan externalMaster, inStatsCh chan inputStats) {
 	udpAddr, err := net.ResolveUDPAddr("udp4", listen)
 	if err != nil {
 		log.Fatal(err)
@@ -95,7 +95,7 @@ func inputUDPLoop(listen string, hParser headingParser, msg chan externalMaster,
 			continue
 		}
 
-		gotUpdate, err := parseNMEA(buffer[:n], hParser)
+		gotUpdate, err := parseNMEA(buffer[:n], headingParser)
 		if err != nil {
 			stats.errorMsg = fmt.Sprintf("%v", err)
 			stats.isErr = true
@@ -110,7 +110,7 @@ func inputUDPLoop(listen string, hParser headingParser, msg chan externalMaster,
 	}
 }
 
-func inputSerialLoop(s serial.Port, hParser headingParser, msg chan externalMaster, inStatsCh chan inputStats) {
+func inputSerialLoop(s serial.Port, headingParser nmeaHeadingParser, msg chan externalMaster, inStatsCh chan inputStats) {
 
 	scanner := bufio.NewReader(s)
 	for {
@@ -121,7 +121,7 @@ func inputSerialLoop(s serial.Port, hParser headingParser, msg chan externalMast
 			inStatsCh <- stats
 			continue
 		}
-		gotUpdate, err := parseNMEA(line, hParser)
+		gotUpdate, err := parseNMEA(line, headingParser)
 
 		if err != nil {
 			stats.errorMsg = fmt.Sprintf("%v", err)

@@ -19,10 +19,10 @@ type Outputter struct {
 	writer              io.Writer
 	stats               outputStats
 	outputStatusChannel chan outputStats
-	serialiser          nmeaSerialiser
+	serialiser          nmeaPositionSerialiser
 }
 
-func NewOutputter(writer io.Writer, serialiser nmeaSerialiser) *Outputter {
+func NewOutputter(writer io.Writer, serialiser nmeaPositionSerialiser) *Outputter {
 	return &Outputter{writer: writer, stats: outputStats{}, outputStatusChannel: make(chan outputStats, 1), serialiser: serialiser}
 }
 
@@ -40,7 +40,6 @@ func (outputter *Outputter) handleError(err error, message string) {
 func (outputter *Outputter) OutputLoop() {
 	var previousLatitude float64
 	var previousLongitude float64
-
 	for {
 		time.Sleep(100 * time.Millisecond)
 		globalPosition, err := getGlobalPosition()

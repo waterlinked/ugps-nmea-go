@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type nmeaSerialiser interface {
+type nmeaPositionSerialiser interface {
 	serialise(GlobalPosition, AcousticPosition) string
 	noPosition() string
 }
@@ -23,8 +23,8 @@ type ggaSerialiser struct{}
 func (serialiser ggaSerialiser) serialise(globalPosition GlobalPosition, acousticPosition AcousticPosition) string {
 	sentence := GAGGA{
 		TimeUTC:                time.Now().UTC(),
-		Latitude:               LatLng(globalPosition.Latitude),
-		Longitude:              LatLng(globalPosition.Longitude),
+		Latitude:               Lat(globalPosition.Latitude),
+		Longitude:              Lng(globalPosition.Longitude),
 		QualityIndicator:       globalPosition.FixQuality,
 		Hdop:                   globalPosition.Hdop,
 		NumberOfSatellitesUsed: int(globalPosition.NumSats),
@@ -37,8 +37,8 @@ func (serialiser ggaSerialiser) serialise(globalPosition GlobalPosition, acousti
 func (serialiser ggaSerialiser) noPosition() string {
 	gga := GAGGA{
 		TimeUTC:                time.Now().UTC(),
-		Latitude:               LatLng(0),
-		Longitude:              LatLng(0),
+		Latitude:               Lat(0),
+		Longitude:              Lng(0),
 		QualityIndicator:       QualityNoFix,
 		NumberOfSatellitesUsed: int(0),
 		Hdop:                   0,
@@ -52,8 +52,8 @@ type tllSerialiser struct{}
 func (serialiser tllSerialiser) serialise(globalPosition GlobalPosition, acousticPosition AcousticPosition) string {
 	sentence := RATLL{
 		TimeUTC:      time.Now().UTC(),
-		Latitude:     LatLng(globalPosition.Latitude),
-		Longitude:    LatLng(globalPosition.Longitude),
+		Latitude:     Lat(globalPosition.Latitude),
+		Longitude:    Lng(globalPosition.Longitude),
 		TargetName:   "ROV",
 		TargetNum:    1,
 		TargetStatus: TargetStatusTracking,
@@ -64,8 +64,8 @@ func (serialiser tllSerialiser) serialise(globalPosition GlobalPosition, acousti
 func (serialiser tllSerialiser) noPosition() string {
 	sentence := RATLL{
 		TimeUTC:      time.Now().UTC(),
-		Latitude:     LatLng(0),
-		Longitude:    LatLng(0),
+		Latitude:     Lat(0),
+		Longitude:    Lng(0),
 		TargetName:   "ROV",
 		TargetNum:    1,
 		TargetStatus: TargetStatusLost,

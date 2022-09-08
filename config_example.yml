@@ -1,0 +1,7 @@
+input:
+  device: COM1@9600
+  sentence: hdm
+output:
+  device: 127.0.0.1:2947
+  sentence: gpgga
+ugps: http://192.168.2.94

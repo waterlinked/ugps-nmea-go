@@ -97,7 +97,6 @@ func setDepth(depth float64) error {
 		return err
 	}
 	if resp.StatusCode != 200 {
-		fmt.Printf("%v\n", resp)
 		return fmt.Errorf("Expected status 200 but got %d", resp.StatusCode)
 	}
 	return nil
@@ -119,9 +118,7 @@ func setExternalMaster(ext externalMaster) error {
 		return err
 	}
 	if resp.StatusCode != 200 {
-		fmt.Printf("%v\n", resp)
 		return fmt.Errorf("Expected status 200 but got %d", resp.StatusCode)
 	}
 	return nil
-
 }

@@ -6,8 +6,8 @@ import (
 	"github.com/waterlinked/go-nmea"
 )
 
-// headingParser is the interface parsing heading input
-type headingParser interface {
+// nmeaHeadingParser is the interface parsing heading input
+type nmeaHeadingParser interface {
 	// parseNMEA takes a nmea.Sentence and return true if new data, else false
 	parseNMEA(sentence nmea.Sentence) (bool, error)
 	// String returns a string representing the current status
