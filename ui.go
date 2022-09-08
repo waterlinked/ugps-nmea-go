@@ -23,7 +23,7 @@ func RunUI(cfg Config, inStatusCh chan inputStats, outputStatusChannel chan outp
 	width := 80
 
 	p := widgets.NewParagraph()
-	p.Title = "Water Linked Underwater GPS NMEA bridge"
+	p.Title = applicationName()
 	p.Text = fmt.Sprintf("PRESS q TO QUIT.\nConfig source: %s\nUnderwater GPS: %s\nIn : %s\nOut: %s\n", cfgSource, cfg.BaseURL, cfg.Input.Device, cfg.Output.Device)
 	p.SetRect(0, y, width, height)
 	y += height

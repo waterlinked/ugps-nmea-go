@@ -70,6 +70,10 @@ func keys[V any](m map[string]V) string {
 	return joined
 }
 
+func applicationName() string {
+	return fmt.Sprintf("Water Linked NMEA UGPS bridge (v%s %s.%s)", Version, BuildNum, SHA)
+}
+
 func main() {
 	var (
 		listen          string
@@ -91,7 +95,7 @@ func main() {
 	availableHeadingSentences["THS"] = &thsParser{}
 	supportedHeadings := keys(availableHeadingSentences)
 
-	fmt.Printf("Water Linked NMEA UGPS bridge (v%s %s.%s)\n", Version, BuildNum, SHA)
+	fmt.Println(applicationName())
 	flag.StringVar(&listen, "i", "", "UDP device and port (host:port) OR serial device (COM7 /dev/ttyUSB1@4800) to listen for NMEA input. ")
 	flag.StringVar(&output, "o", "", "UDP device and port (host:port) OR serial device (COM7 /dev/ttyUSB1) to send NMEA output. ")
 	flag.StringVar(&sentence, "sentence", "GPGGA", "NMEA output sentence to use. Supported: "+supportedSentences)
