@@ -7,11 +7,23 @@ import (
 	"time"
 )
 
-// Latitude or Longitude
-type LatLng float64
+// PrependZero prepends zeros until the given number of decimals
+func PrependZero(value float64, numDecimals uint, formatStr string) string {
+	if value < 0 {
+		panic(fmt.Sprintf("must be positive, got %f", value))
+	}
+	s := fmt.Sprintf(formatStr, value)
+	chars := uint(len(fmt.Sprintf("%d", int(value))))
+	for chars < numDecimals {
+		//fmt.Println("Loop", value, numDecimals, chars)
+		s = "0" + s
+		chars += 1
+	}
+	//fmt.Println("prepended", s, "original", value)
+	return s
+}
 
-// Degrees and minutes
-func (l LatLng) DM() (int, float64) {
+func toDM(l float64) (int, float64) {
 	if l < 0 {
 		l = -l
 	}
@@ -22,29 +34,59 @@ func (l LatLng) DM() (int, float64) {
 	return int(d), m
 }
 
-func (l LatLng) Serialise() string {
+// Lat is Latitude
+type Lat float64
+
+func (l Lat) DM() (int, float64) {
+	return toDM(float64(l))
+}
+
+func (l Lat) Serialise(decimals uint) string {
 	if l == 0 {
 		return ""
 	}
 	d, m := l.DM()
-	return strings.Trim(fmt.Sprintf("%d%f", d, m), "0")
+	fmtStr := fmt.Sprintf("%%.%df", decimals)
+	//fmt.Println("lat", l, d, m, fmtStr)
+	return fmt.Sprintf("%02d%s", d, PrependZero(m, 2, fmtStr))
 }
 
-// CardinalPoint returns the cardinal point: N/S if isLat else E/W
-func (l LatLng) CardinalPoint(isLat bool) string {
+// CardinalPoint returns the cardinal point N/S
+func (l Lat) CardinalPoint() string {
+	if l == 0 {
+		return ""
+	}
+	if l < 0 {
+		return "S"
+	}
+	return "N"
+}
+
+// Lng is Longitude
+type Lng float64
+
+// Degrees and minutes
+func (l Lng) DM() (int, float64) {
+	return toDM(float64(l))
+}
+
+func (l Lng) Serialise(decimals uint) string {
+	if l == 0 {
+		return ""
+	}
+	d, m := l.DM()
+
+	fmtStr := fmt.Sprintf("%%.%df", decimals)
+	//fmt.Println("lng", l, d, m, fmtStr)
+	return fmt.Sprintf("%03d%s", d, PrependZero(m, 2, fmtStr))
+}
+
+// CardinalPoint returns the cardinal point: E/W
+func (l Lng) CardinalPoint() string {
 	if l == 0 {
 		return ""
 	}
 
-	// Lattitude
-	if isLat {
-		if l < 0 {
-			return "S"
-		}
-		return "N"
-	}
-
-	// Longitude
 	if l < 0 {
 		return "W"
 	}
@@ -82,14 +124,18 @@ Field Number:
 */
 type RATLL struct {
 	TargetNum    int
-	Latitude     LatLng // In decimal format
-	Longitude    LatLng // In decimal format
+	Latitude     Lat // In decimal format
+	Longitude    Lng // In decimal format
 	TargetName   string
 	TimeUTC      time.Time // Aggregation of TimeUTC data field
 	TargetStatus byte      // L=lost, Q=acuisition, T=tracking
 }
 
 func (sentence RATLL) Serialise() string {
+	return sentence.SerialiseDecimals(5)
+}
+
+func (sentence RATLL) SerialiseDecimals(decimals uint) string {
 
 	fields := make([]string, 0)
 	fields = append(fields, "RATLL")
@@ -97,11 +143,11 @@ func (sentence RATLL) Serialise() string {
 	fields = append(fields, fmt.Sprintf("%d", sentence.TargetNum))
 
 	fields = append(fields,
-		strings.Trim(sentence.Latitude.Serialise(), "0"), sentence.Latitude.CardinalPoint(true),
-		strings.Trim(sentence.Longitude.Serialise(), "0"), sentence.Longitude.CardinalPoint(false),
+		sentence.Latitude.Serialise(decimals), sentence.Latitude.CardinalPoint(),
+		sentence.Longitude.Serialise(decimals), sentence.Longitude.CardinalPoint(),
 	)
 
-	fields = append(fields, fmt.Sprintf("%s", sentence.TargetName))
+	fields = append(fields, sentence.TargetName)
 
 	fields = append(fields, sentence.TimeUTC.Format("150405.000"))
 	if sentence.TargetStatus == 'T' {
@@ -149,8 +195,8 @@ Example: $GPGGA,015540.000,3150.68378,N,11711.93139,E,1,17,0.6,0051.6,M,0.0,M,,*
 
 type GAGGA struct {
 	TimeUTC                time.Time
-	Latitude               LatLng
-	Longitude              LatLng
+	Latitude               Lat
+	Longitude              Lng
 	QualityIndicator       float64
 	NumberOfSatellitesUsed int
 	Altitude               float64
@@ -158,6 +204,10 @@ type GAGGA struct {
 }
 
 func (sentence GAGGA) Serialise() string {
+	return sentence.SerialiseDecimals(5)
+}
+
+func (sentence GAGGA) SerialiseDecimals(decimals uint) string {
 
 	fields := make([]string, 0)
 	fields = append(fields, "GPGGA")
@@ -165,8 +215,8 @@ func (sentence GAGGA) Serialise() string {
 	fields = append(fields, sentence.TimeUTC.Format("150405.000"))
 
 	fields = append(fields,
-		strings.Trim(sentence.Latitude.Serialise(), "0"), sentence.Latitude.CardinalPoint(true),
-		strings.Trim(sentence.Longitude.Serialise(), "0"), sentence.Longitude.CardinalPoint(false),
+		sentence.Latitude.Serialise(decimals), sentence.Latitude.CardinalPoint(),
+		sentence.Longitude.Serialise(decimals), sentence.Longitude.CardinalPoint(),
 	)
 
 	fields = append(fields, fmt.Sprintf("%.0f", sentence.QualityIndicator))
