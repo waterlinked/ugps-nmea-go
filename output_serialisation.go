@@ -12,7 +12,7 @@ type nmeaSerialiser interface {
 // QualityNoFix represents no fix in an GGA sentence
 const QualityNoFix = 0
 
-// TargetStatusTracking represents sucessfully tracking a target
+// TargetStatusTracking represents successfully tracking a target
 const TargetStatusTracking = 'T'
 
 // TargetStatusLost represents loosing the tracked target
