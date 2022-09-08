@@ -20,51 +20,51 @@ The application also reads the latitude/longitude of the Locator from the Underw
 
 ## Running
 
-The application is run on the command line and can be configured via arguments. The arguments are:
+The application is run on the command line and can be configured via the config file (config.yml). Copy `config_example.yml` to `config.yml` and modify to suit your setup.
 
-```
-  -d	debug
-  -heading string
-    	Input sentence type to use for heading. Supported: HDM, HDT, THS (default "HDT")
-  -i string
-    	UDP device and port (host:port) OR serial device (COM7 /dev/ttyUSB1@4800) to listen for NMEA input.  (default "0.0.0.0:7777")
-  -o string
-    	UDP device and port (host:port) OR serial device (COM7 /dev/ttyUSB1) to send NMEA output.
-  -sentence string
-    	NMEA output sentence to use. Supported: RATLL, GPGGA (default "GPGGA")
-  -url string
-    	URL of Underwater GPS (default "http://192.168.2.94")
+```yaml
+#
+# Example config file
+#
+input:
+# Input from COM port - device: COM1@9600
+# Input from UDP - device: 127.0.0.1:
+  device: COM1
+# Sentences: hdm, hdt, ths
+  heading_sentence: hdm
+output:
+# Output to UDP - device: 127.0.0.1:2947
+# Output to COM port - device: COM1@9600
+  device: 127.0.0.1:2947
+# Sentences: gpgga, rattl
+  position_sentence: gpgga
+ugps_url: http://192.168.2.94
 ```
 
-Example using UART input from /dev/ttyUSB2 with baud rate 4800 using THS sentence for heading and sending the output via UDP on port 2947 on localhost.
+If the configuration file is not found, parameters from command line are used.
 
-```
-./nmea_ugps_linux_amd64 -i /dev/ttyUSB2@4800 -o 127.0.0.1:2947 -heading THS
-```
+Versions before 1.6.0 used only command line arguments for configuration.
+Command line arguments in the 1.6.0 release are compatible with earlier versions.
 
-On Windows, the easiest is to create a `start.bat` file, edit it with notepad to the desired settings and then double-click it in Explorer to start it. Example of what the file can look like:
-
-```
-nmea_ugps_windows_amd64.exe -i COM1@4800 -o 127.0.0.1:2947 -heading HDM
-pause
-```
 
 ## Screenshot
 
 When running the application it typically looks like this:
 
 ```
-┌─Water Linked Underwater GPS NMEA bridge──────────────────────────────────────┐
-│PRESS q TO QUIT                                                               │
-│In : 0.0.0.0:7777                                                             │
+┌─Water Linked NMEA UGPS bridge (v1.6.0 local.local)───────────────────────────┐
+│PRESS q TO QUIT.                                                              │
+│Config from: config file 'config.yml'                                         │
+│Underwater GPS: http://127.0.0.1:8080                                         │
+│In : 127.0.0.1:7777                                                           │
 │Out: 127.0.0.1:2947                                                           │
 └──────────────────────────────────────────────────────────────────────────────┘
 ┌─Input status─────────────────────────────────────────────────────────────────┐
 │Supported NMEA sentences received:                                            │
-│ * Position   : GGA: 5                                                        │
-│ * Heading    : HDT: 6                                                        │
-│ * Parse error: 0                                                             │
-│Sent sucessfully to UGPS: 10                                                  │
+│ * Position   : GGA: 17                                                       │
+│ * Heading    : HDM: 8                                                        │
+│ * Parse error: 8                                                             │
+│Sent successfully to Underwater GPS: 24                                       │
 │                                                                              │
 │                                                                              │
 │                                                                              │
@@ -72,7 +72,7 @@ When running the application it typically looks like this:
 │                                                                              │
 └──────────────────────────────────────────────────────────────────────────────┘
 ┌─Output status────────────────────────────────────────────────────────────────┐
-│112 positions sent to NMEA out                                                │
+│45 positions sent to NMEA out                                                 │
 │                                                                              │
 │                                                                              │
 │                                                                              │
