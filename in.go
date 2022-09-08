@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tarm/serial"
 	"github.com/waterlinked/go-nmea"
+	"go.bug.st/serial"
 )
 
 type inputStats struct {
@@ -110,7 +110,7 @@ func inputUDPLoop(listen string, hParser headingParser, msg chan externalMaster,
 	}
 }
 
-func inputSerialLoop(s *serial.Port, hParser headingParser, msg chan externalMaster, inStatsCh chan inputStats) {
+func inputSerialLoop(s serial.Port, hParser headingParser, msg chan externalMaster, inStatsCh chan inputStats) {
 
 	scanner := bufio.NewReader(s)
 	for {

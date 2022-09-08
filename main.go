@@ -13,7 +13,7 @@ import (
 
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
-	"github.com/tarm/serial"
+	"go.bug.st/serial"
 )
 
 var (
@@ -125,8 +125,8 @@ func main() {
 		// Input from serial port
 		port, baudrate := baudAndPortFromDevice(listen)
 
-		c := &serial.Config{Name: port, Baud: baudrate}
-		s, err := serial.OpenPort(c)
+		c := &serial.Mode{BaudRate: baudrate}
+		s, err := serial.Open(port, c)
 		if err != nil {
 			fmt.Printf("Error opening serial port: %v\n", err)
 			os.Exit(1)
@@ -159,8 +159,8 @@ func main() {
 		// Output to different serial port
 		port, baudrate := baudAndPortFromDevice(output)
 
-		c := &serial.Config{Name: port, Baud: baudrate}
-		s, err := serial.OpenPort(c)
+		c := &serial.Mode{BaudRate: baudrate}
+		s, err := serial.Open(port, c)
 		if err != nil {
 			fmt.Printf("Error opening serial port: %v\n", err)
 			os.Exit(1)
