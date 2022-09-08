@@ -204,7 +204,7 @@ type GAGGA struct {
 }
 
 func (sentence GAGGA) Serialise() string {
-	return sentence.SerialiseDecimals(5)
+	return sentence.SerialiseDecimals(6)
 }
 
 func (sentence GAGGA) SerialiseDecimals(decimals uint) string {
