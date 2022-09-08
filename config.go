@@ -10,13 +10,13 @@ import (
 type Config struct {
 	Input struct {
 		Device          string `yaml:"device"`
-		HeadingSentence string `yaml:"sentence"`
+		HeadingSentence string `yaml:"heading_sentence"`
 	} `yaml:"input"`
 	Output struct {
-		Device   string `yaml:"device"`
-		Sentence string `yaml:"sentence"`
+		Device           string `yaml:"device"`
+		PositionSentence string `yaml:"position_sentence"`
 	} `yaml:"output"`
-	BaseURL string `yaml:"ugps"`
+	BaseURL string `yaml:"ugps_url"`
 }
 
 func readFile(cfg *Config, filename string) error {

@@ -116,7 +116,7 @@ func main() {
 			cfg.Input.Device = listen
 			cfg.Input.HeadingSentence = headingSentence
 			cfg.Output.Device = output
-			cfg.Output.Sentence = sentence
+			cfg.Output.PositionSentence = sentence
 			cfg.BaseURL = url
 		} else {
 			RunUIError(fmt.Sprintf("config file parse error:\n%s", err))
@@ -141,9 +141,9 @@ func main() {
 		fmt.Println("Same port for input and output", cfg.Input.Device)
 	}
 
-	serialiser, exists := availableSerialisers[strings.ToUpper(cfg.Output.Sentence)]
+	serialiser, exists := availableSerialisers[strings.ToUpper(cfg.Output.PositionSentence)]
 	if !exists {
-		msg := fmt.Sprintf("Unsupported sentence '%s'. Supported are: %s\n", cfg.Output.Sentence, supportedSentences)
+		msg := fmt.Sprintf("Unsupported sentence '%s'. Supported are: %s\n", cfg.Output.PositionSentence, supportedSentences)
 		RunUIError(msg)
 
 		os.Exit(1)

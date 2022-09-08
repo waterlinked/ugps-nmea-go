@@ -1,7 +1,7 @@
 input:
   device: COM1@9600
-  sentence: hdm
+  heading_sentence: hdm
 output:
   device: 127.0.0.1:2947
-  sentence: gpgga
-ugps: http://192.168.2.94
+  position_sentence: gpgga
+ugps_url: http://192.168.2.94

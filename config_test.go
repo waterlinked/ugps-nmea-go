@@ -19,11 +19,11 @@ func TestConfig(t *testing.T) {
 
 	data := `input:
   device: /dev/ttyUSB0
-  sentence: hdm
+  heading_sentence: hdm
 output:
   device: /dev/ttyUSB1@9600
-  sentence: gpgga
-ugps: http://127.0.0.1:8080
+  position_sentence: gpgga
+ugps_url: http://127.0.0.1:8080
 `
 	fn := "/tmp/config.yml.1"
 	err = os.WriteFile(fn, []byte(data), 0644)
@@ -37,7 +37,9 @@ ugps: http://127.0.0.1:8080
 	assert.Equal(t, "hdm", cfg.Input.HeadingSentence)
 
 	assert.Equal(t, "/dev/ttyUSB1@9600", cfg.Output.Device)
-	assert.Equal(t, "gpgga", cfg.Output.Sentence)
+	assert.Equal(t, "gpgga", cfg.Output.PositionSentence)
+
+	assert.Equal(t, "http://127.0.0.1:8080", cfg.BaseURL)
 
 	assert.True(t, cfg.InputEnabled())
 	assert.True(t, cfg.OutputEnabled())
@@ -55,4 +57,16 @@ func TestConfigInvalid(t *testing.T) {
 
 	err = readFile(&cfg, fn)
 	assert.Error(t, err)
+}
+
+func TestExampleConfig(t *testing.T) {
+	cfg := Config{}
+
+	err := readFile(&cfg, "config_example.yml")
+	assert.NoError(t, err)
+	assert.NotEmpty(t, cfg.Input.Device)
+	assert.NotEmpty(t, cfg.Input.HeadingSentence)
+	assert.NotEmpty(t, cfg.Output.Device)
+	assert.NotEmpty(t, cfg.Output.PositionSentence)
+	assert.NotEmpty(t, cfg.BaseURL)
 }
