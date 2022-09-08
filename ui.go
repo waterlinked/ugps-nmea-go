@@ -24,7 +24,7 @@ func RunUI(cfg Config, inStatusCh chan inputStats, outputStatusChannel chan outp
 
 	p := widgets.NewParagraph()
 	p.Title = applicationName()
-	p.Text = fmt.Sprintf("PRESS q TO QUIT.\nConfig source: %s\nUnderwater GPS: %s\nIn : %s\nOut: %s\n", cfgSource, cfg.BaseURL, cfg.Input.Device, cfg.Output.Device)
+	p.Text = fmt.Sprintf("PRESS q TO QUIT.\nConfig from: %s\nUnderwater GPS: %s\nIn : %s\nOut: %s\n", cfgSource, cfg.BaseURL, cfg.Input.Device, cfg.Output.Device)
 	p.SetRect(0, y, width, height)
 	y += height
 	p.TextStyle.Fg = ui.ColorWhite
@@ -144,7 +144,7 @@ func RunUIError(message string) {
 	width := 80
 
 	p := widgets.NewParagraph()
-	p.Title = "Water Linked Underwater GPS NMEA bridge"
+	p.Title = applicationName()
 	p.Text = "PRESS q TO QUIT."
 	p.SetRect(0, y, width, height)
 	y += height
@@ -152,7 +152,7 @@ func RunUIError(message string) {
 	p.BorderStyle.Fg = ui.ColorCyan
 
 	errorPara := widgets.NewParagraph()
-	errorPara.Title = "Error occured"
+	errorPara.Title = "Error occurred"
 	errorPara.Text = message
 	height = 10
 	errorPara.SetRect(0, y, width, y+height)
