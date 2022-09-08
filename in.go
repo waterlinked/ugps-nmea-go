@@ -42,7 +42,7 @@ func parseNMEA(data []byte, h headingParser) (bool, error) {
 	}
 
 	switch m := s.(type) {
-	case nmea.GPGGA:
+	case nmea.GGA:
 		debugPrintf("GGA: Lat/lon : %s %s\n", nmea.FormatGPS(m.Latitude), nmea.FormatGPS(m.Longitude))
 
 		fix, err := strconv.ParseFloat(m.FixQuality, 64)

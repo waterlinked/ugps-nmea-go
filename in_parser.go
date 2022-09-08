@@ -41,7 +41,7 @@ func (p hdmParser) String() string {
 
 func (p *hdtParser) parseNMEA(sentence nmea.Sentence) (bool, error) {
 	switch m := sentence.(type) {
-	case nmea.GPHDT:
+	case nmea.HDT:
 		debugPrintf("HDT: Heading : %f\n", m.Heading)
 		latest.Orientation = m.Heading
 		p.count++
