@@ -36,7 +36,7 @@ output:
 # Output to UDP - device: 127.0.0.1:2947
 # Output to COM port - device: COM1@9600
   device: 127.0.0.1:2947
-# Sentences: gpgga, rattl
+# Sentences: gpgga, ratll
   position_sentence: gpgga
 ugps_url: http://192.168.2.94
 ```
