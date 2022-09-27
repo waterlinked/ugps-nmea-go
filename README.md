@@ -51,34 +51,4 @@ Command line arguments in the 1.6.0 release are compatible with earlier versions
 
 When running the application it typically looks like this:
 
-```
-┌─Water Linked NMEA UGPS bridge (v1.6.0 local.local)───────────────────────────┐
-│PRESS q TO QUIT.                                                              │
-│Config from: config file 'config.yml'                                         │
-│Underwater GPS: http://127.0.0.1:8080                                         │
-│In : 127.0.0.1:7777                                                           │
-│Out: 127.0.0.1:2947                                                           │
-└──────────────────────────────────────────────────────────────────────────────┘
-┌─Input status─────────────────────────────────────────────────────────────────┐
-│Supported NMEA sentences received:                                            │
-│ * Position   : GGA: 17                                                       │
-│ * Heading    : HDM: 8                                                        │
-│ * Parse error: 8                                                             │
-│Sent successfully to Underwater GPS: 24                                       │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
-┌─Output status────────────────────────────────────────────────────────────────┐
-│45 positions sent to NMEA out                                                 │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
-```
+![Screenshot](/screenshot/screenshot.png)
