@@ -164,29 +164,44 @@ func main() {
 	var writer io.Writer = nil
 
 	// Setup input
-	if cfg.Input.Device == "" {
-		// No input
-	} else if deviceIsUDP(cfg.Input.Device) {
-		// Input from UDP
-		go inputUDPLoop(cfg.Input.Device, hParser, masterCh, inStatusCh)
-		go inputLoop(masterCh, inStatusCh)
-	} else {
-		// Input from serial port
-		port, baudrate := baudAndPortFromDevice(cfg.Input.Device)
-
-		c := &serial.Mode{BaudRate: baudrate}
-		s, err := serial.Open(port, c)
-		if err != nil {
-			msg := fmt.Sprintf("Error opening serial port %s: %v\n", port, err)
-			RunUIError(msg)
-			os.Exit(1)
+	if cfg.InputEnabled() {
+		var retransmit net.Conn
+		if cfg.RetransmitEnabled() {
+			if !deviceIsUDP(cfg.Input.Retransmit) {
+				msg := fmt.Sprintf("Retransmit only supports UDP. Got serial port as configuration: %v\n", cfg.Input.Retransmit)
+				RunUIError(msg)
+				os.Exit(1)
+			}
+			conn, err := net.Dial("udp", cfg.Input.Retransmit)
+			if err != nil {
+				msg := fmt.Sprintf("Error connecting to UDP: %s:%v\n", err, cfg.Input.Retransmit)
+				RunUIError(msg)
+				os.Exit(1)
+			}
+			defer conn.Close()
+			retransmit = conn
 		}
-		defer s.Close()
+		if deviceIsUDP(cfg.Input.Device) {
+			// Input from UDP
+			go inputUDPLoop(cfg.Input.Device, hParser, masterCh, inStatusCh, retransmit)
+		} else {
+			// Input from serial port
+			port, baudrate := baudAndPortFromDevice(cfg.Input.Device)
 
-		go inputSerialLoop(s, hParser, masterCh, inStatusCh)
-		if sameInOut {
-			// Output is to same serial port as input
-			writer = s
+			c := &serial.Mode{BaudRate: baudrate}
+			s, err := serial.Open(port, c)
+			if err != nil {
+				msg := fmt.Sprintf("Error opening serial port %s: %v\n", port, err)
+				RunUIError(msg)
+				os.Exit(1)
+			}
+			defer s.Close()
+
+			go inputSerialLoop(s, hParser, masterCh, inStatusCh, retransmit)
+			if sameInOut {
+				// Output is to same serial port as input
+				writer = s
+			}
 		}
 		go inputLoop(masterCh, inStatusCh)
 	}

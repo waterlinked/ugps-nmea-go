@@ -1,0 +1,10 @@
+input:
+  device: 127.0.0.1:7777
+  heading_sentence: hdm
+  retransmit: 127.0.0.1:2948
+#  retransmit: COM1@9600
+output:
+  device: 127.0.0.1:2947
+  position_sentence: ratll
+#ugps_url: https://demo.waterlinked.com
+ugps_url: http://127.0.0.1:8080

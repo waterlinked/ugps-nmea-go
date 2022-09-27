@@ -8,11 +8,17 @@ import (
 )
 
 type outputStats struct {
-	getOk  int
-	getErr int
-	sendOk int
-	isErr  bool
-	errMsg string
+	src struct {
+		getOk    int
+		getCount int
+		getErr   int
+		errMsg   string
+	}
+	dst struct {
+		sendOk   int
+		errCount int
+		errMsg   string
+	}
 }
 
 type Outputter struct {
@@ -26,11 +32,10 @@ func NewOutputter(writer io.Writer, serialiser nmeaPositionSerialiser) *Outputte
 	return &Outputter{writer: writer, stats: outputStats{}, outputStatusChannel: make(chan outputStats, 1), serialiser: serialiser}
 }
 
-func (outputter *Outputter) handleError(err error, message string) {
-	outputter.stats.isErr = true
-	outputter.stats.errMsg = fmt.Sprintf("%s: %v", message, err)
-	debugPrintf(outputter.stats.errMsg)
-	outputter.stats.getErr++
+func (outputter *Outputter) handleSrcError(err error, message string) {
+	outputter.stats.src.errMsg = fmt.Sprintf("%s: %v", message, err)
+	debugPrintf(outputter.stats.src.errMsg)
+	outputter.stats.src.getErr++
 	outputter.outputStatusChannel <- outputter.stats
 
 	output := outputter.serialiser.noPosition()
@@ -44,15 +49,16 @@ func (outputter *Outputter) OutputLoop() {
 		time.Sleep(100 * time.Millisecond)
 		globalPosition, err := getGlobalPosition()
 		if err != nil {
-			outputter.handleError(err, "Error fetching global position from UGPS")
+			outputter.handleSrcError(err, "Error fetching global position from UGPS")
 			continue
 		}
 		acousticPosition, err := getAcousticPosition()
 		if err != nil {
-			outputter.handleError(err, "Error fetching acoustic position from UGPS")
+			outputter.handleSrcError(err, "Error fetching acoustic position from UGPS")
 			continue
 		}
-		outputter.stats.getOk++
+		outputter.stats.src.getOk++
+		outputter.stats.src.errMsg = ""
 
 		// Check if position has changed
 		if math.Abs((globalPosition.Latitude-previousLatitude)) < 1e-12 &&
@@ -60,6 +66,7 @@ func (outputter *Outputter) OutputLoop() {
 			// Not changed
 			continue
 		}
+		outputter.stats.src.getCount++
 
 		previousLatitude = globalPosition.Latitude
 		previousLongitude = globalPosition.Longitude
@@ -68,12 +75,13 @@ func (outputter *Outputter) OutputLoop() {
 
 		_, err = fmt.Fprintf(outputter.writer, "%s\r\n", output)
 		if err != nil {
-			outputter.handleError(err, "Error in writing NMEA string")
+			message := "Error in writing NMEA string"
+			outputter.stats.dst.errMsg = fmt.Sprintf("%s: %v", message, err)
+			outputter.stats.dst.errCount++
 		} else {
-			outputter.stats.isErr = false
-			outputter.stats.sendOk++
-			outputter.outputStatusChannel <- outputter.stats
+			outputter.stats.dst.errMsg = ""
+			outputter.stats.dst.sendOk++
 		}
-
+		outputter.outputStatusChannel <- outputter.stats
 	}
 }

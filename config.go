@@ -11,6 +11,7 @@ type Config struct {
 	Input struct {
 		Device          string `yaml:"device"`
 		HeadingSentence string `yaml:"heading_sentence"`
+		Retransmit      string `yaml:"retransmit"`
 	} `yaml:"input"`
 	Output struct {
 		Device           string `yaml:"device"`
@@ -36,6 +37,10 @@ func readFile(cfg *Config, filename string) error {
 
 func (c Config) InputEnabled() bool {
 	return c.Input.Device != ""
+}
+
+func (c Config) RetransmitEnabled() bool {
+	return c.Input.Retransmit != ""
 }
 
 func (c Config) OutputEnabled() bool {

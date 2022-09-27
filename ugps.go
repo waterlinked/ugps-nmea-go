@@ -25,10 +25,12 @@ type AcousticPosition struct {
 	Z float64 `json:"z"`
 }
 
+/*
 type externalDepth struct {
 	Depth       float64 `json:"depth"`
 	Temperature float64 `json:"temp"`
 }
+*/
 
 type externalMaster struct {
 	Cog         float64 `json:"cog"`
@@ -41,7 +43,7 @@ type externalMaster struct {
 	Sog         float64 `json:"sog"`
 }
 
-var baseURL = "http://127.0.0.1:8080"
+var baseURL = "nothing yet"
 
 var client = &http.Client{
 	Timeout: time.Second * 1,
@@ -52,7 +54,10 @@ func getJSON(url string, target interface{}) error {
 	if err != nil {
 		return err
 	}
-	if r.StatusCode != 200 {
+	if r.StatusCode == 500 {
+		// 500 error happens if no Locator is detected
+		return fmt.Errorf("Locator has no position? Expect status 200, got %d", r.StatusCode)
+	} else if r.StatusCode != 200 {
 		return fmt.Errorf("Expect status 200, got %d", r.StatusCode)
 	}
 	defer r.Body.Close()
@@ -80,6 +85,7 @@ func getAcousticPosition() (AcousticPosition, error) {
 	return acousticPosition, nil
 }
 
+/*
 func setDepth(depth float64) error {
 	url := baseURL + "/api/v1/external/depth"
 
@@ -101,6 +107,7 @@ func setDepth(depth float64) error {
 	}
 	return nil
 }
+*/
 
 func setExternalMaster(ext externalMaster) error {
 	url := baseURL + "/api/v1/external/master"

@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"strconv"
@@ -14,13 +15,21 @@ import (
 )
 
 type inputStats struct {
-	posDesc         string
-	posCount        int
-	headDesc        string
-	unparsableCount int
-	isErr           bool
-	errorMsg        string
-	sendOk          int
+	src struct {
+		posDesc         string
+		posCount        int
+		headDesc        string
+		unparsableCount int
+		errorMsg        string
+	}
+	dst struct {
+		errorMsg string
+		sendOk   int
+	}
+	retransmit struct {
+		count    int
+		errorMsg string
+	}
 }
 
 const missingDataTimeout = 10
@@ -37,7 +46,7 @@ func parseNMEA(data []byte, headingParse nmeaHeadingParser) (bool, error) {
 	s, err := nmea.Parse(line)
 	if err != nil {
 		debugPrintf("Parse err: %s (%s)", err, line)
-		stats.unparsableCount++
+		stats.src.unparsableCount++
 		return false, nil
 	}
 
@@ -56,16 +65,16 @@ func parseNMEA(data []byte, headingParse nmeaHeadingParser) (bool, error) {
 		latest.FixQuality = fix
 		latest.Hdop = m.HDOP
 		//stats.typeGga++
-		stats.posCount++
-		stats.posDesc = fmt.Sprintf("GGA: %d", stats.posCount)
+		stats.src.posCount++
+		stats.src.posDesc = fmt.Sprintf("GGA: %d", stats.src.posCount)
 		return true, nil
 	}
 	success, err := headingParse.parseNMEA(s)
-	stats.headDesc = headingParse.String()
+	stats.src.headDesc = headingParse.String()
 	return success, err
 }
 
-func inputUDPLoop(listen string, headingParser nmeaHeadingParser, msg chan externalMaster, inStatsCh chan inputStats) {
+func inputUDPLoop(listen string, headingParser nmeaHeadingParser, msg chan externalMaster, inStatsCh chan inputStats, retransmitConn net.Conn) {
 	udpAddr, err := net.ResolveUDPAddr("udp4", listen)
 	if err != nil {
 		log.Fatal(err)
@@ -89,51 +98,65 @@ func inputUDPLoop(listen string, headingParser nmeaHeadingParser, msg chan exter
 			if nerr != nil && nerr.Timeout() {
 				continue
 			}
-			stats.errorMsg = fmt.Sprintf("UDP err: %v\n", err)
-			stats.isErr = true
+			stats.src.errorMsg = fmt.Sprintf("UDP err: %v\n", err)
 			inStatsCh <- stats
 			continue
 		}
 
-		gotUpdate, err := parseNMEA(buffer[:n], headingParser)
+		data := buffer[:n]
+		if retransmitConn != nil {
+			retransmitConn.SetWriteDeadline(time.Now().Add(1 * time.Second))
+			_, err := retransmitConn.Write(data)
+			if err != nil {
+				debugPrintf("Retransmit error: %s", err)
+				stats.retransmit.errorMsg = fmt.Sprintf("Retransmit error: %s", err)
+			} else {
+				stats.retransmit.count += 1
+				stats.retransmit.errorMsg = ""
+			}
+		}
+		stats.src.errorMsg = ""
+
+		gotUpdate, err := parseNMEA(data, headingParser)
 		if err != nil {
-			stats.errorMsg = fmt.Sprintf("%v", err)
-			stats.isErr = true
-			inStatsCh <- stats
+			stats.src.errorMsg = fmt.Sprintf("%v", err)
 		} else if gotUpdate {
 			msg <- latest
-
-			stats.errorMsg = ""
-			stats.isErr = false
-			inStatsCh <- stats
 		}
+		inStatsCh <- stats
 	}
 }
 
-func inputSerialLoop(s serial.Port, headingParser nmeaHeadingParser, msg chan externalMaster, inStatsCh chan inputStats) {
+func inputSerialLoop(s serial.Port, headingParser nmeaHeadingParser, msg chan externalMaster, inStatsCh chan inputStats, retransmit io.Writer) {
 
 	scanner := bufio.NewReader(s)
 	for {
 		line, _, err := scanner.ReadLine()
 		if err != nil {
-			stats.errorMsg = fmt.Sprintf("Serial err: %v\n", err)
-			stats.isErr = true
+			stats.src.errorMsg = fmt.Sprintf("Serial err: %v\n", err)
 			inStatsCh <- stats
 			continue
 		}
+		if retransmit != nil {
+			_, err := retransmit.Write(line)
+			if err != nil {
+				debugPrintf("Retransmit error: %s", err)
+				stats.retransmit.errorMsg = fmt.Sprintf("Retransmit error: %s", err)
+			} else {
+				stats.retransmit.count += 1
+				stats.retransmit.errorMsg = ""
+			}
+		}
+
 		gotUpdate, err := parseNMEA(line, headingParser)
+		stats.src.errorMsg = ""
 
 		if err != nil {
-			stats.errorMsg = fmt.Sprintf("%v", err)
-			stats.isErr = true
-			inStatsCh <- stats
+			stats.src.errorMsg = fmt.Sprintf("%v", err)
 		} else if gotUpdate {
 			msg <- latest
-
-			stats.errorMsg = ""
-			stats.isErr = false
-			inStatsCh <- stats
 		}
+		inStatsCh <- stats
 	}
 }
 
@@ -142,17 +165,16 @@ func inputLoop(masterCh chan externalMaster, inputStatusCh chan inputStats) {
 	for {
 		select {
 		case <-time.After(missingDataTimeout * time.Second):
-			stats.isErr = true
-			stats.errorMsg = fmt.Sprintf("Got no input after %d seconds, is data being sent?", missingDataTimeout)
+			stats.src.errorMsg = fmt.Sprintf("Got no input after %d seconds, is data being sent?", missingDataTimeout)
 			inputStatusCh <- stats
 		case curr := <-masterCh:
 			err := setExternalMaster(curr)
 			if err == nil {
-				stats.sendOk++
+				stats.dst.sendOk++
+				stats.dst.errorMsg = ""
 			} else {
 				debugPrintf("%v", err)
-				stats.isErr = true
-				stats.errorMsg = fmt.Sprintf("%v", err)
+				stats.dst.errorMsg = fmt.Sprintf("%v", err)
 				inputStatusCh <- stats
 			}
 		}
