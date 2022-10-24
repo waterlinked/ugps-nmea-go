@@ -121,7 +121,11 @@ func inputUDPLoop(listen string, headingParser nmeaHeadingParser, msg chan exter
 		if err != nil {
 			stats.src.errorMsg = fmt.Sprintf("%v", err)
 		} else if gotUpdate {
-			msg <- latest
+			select {
+			case msg <- latest: // put message in channel
+			default: // channel is full
+			}
+
 		}
 		inStatsCh <- stats
 	}
@@ -154,7 +158,10 @@ func inputSerialLoop(s serial.Port, headingParser nmeaHeadingParser, msg chan ex
 		if err != nil {
 			stats.src.errorMsg = fmt.Sprintf("%v", err)
 		} else if gotUpdate {
-			msg <- latest
+			select {
+			case msg <- latest: // put message in channel
+			default: // channel is full
+			}
 		}
 		inStatsCh <- stats
 	}
@@ -177,6 +184,7 @@ func inputLoop(masterCh chan externalMaster, inputStatusCh chan inputStats) {
 				stats.dst.errorMsg = fmt.Sprintf("%v", err)
 				inputStatusCh <- stats
 			}
+			time.Sleep(50 * time.Millisecond) // Sleep to make maximum "setExternalMaster" frequency of 20 Hz
 		}
 	}
 }

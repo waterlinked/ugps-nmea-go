@@ -46,7 +46,7 @@ func (outputter *Outputter) OutputLoop() {
 	var previousLatitude float64
 	var previousLongitude float64
 	for {
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond) // Maximum polling speed 10 Hz
 		globalPosition, err := getGlobalPosition()
 		if err != nil {
 			outputter.handleSrcError(err, "Error fetching global position from UGPS")
