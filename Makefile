@@ -20,6 +20,7 @@ build:
 	CGO=0 GOOS=linux GOARCH=arm GOARM=6 go build ${LDFLAGS} -o ${BINARY}_linux_armv6
 	CGO=0 GOOS=linux GOARCH=amd64 go build ${LDFLAGS} -o ${BINARY}_linux_amd64
 	CGO=0 GOOS=windows GOARCH=amd64 go build ${LDFLAGS} -o ${BINARY}_windows_amd64.exe
+	cp config_example.yml ${BUILD_FOLDER}/config.yml
 
 test:
 	go test
