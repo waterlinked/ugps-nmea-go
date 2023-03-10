@@ -28,7 +28,7 @@ The application is run on the command line and can be configured via the config 
 #
 input:
 # Input from COM port - device: COM1@9600
-# Input from UDP - device: 127.0.0.1:
+# Input from UDP - device: 127.0.0.1:2948
   device: COM1
 # Sentences: hdm, hdt, ths
   heading_sentence: hdm
