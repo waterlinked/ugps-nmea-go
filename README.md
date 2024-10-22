@@ -27,17 +27,25 @@ The application is run on the command line and can be configured via the config 
 # Example config file
 #
 input:
-# Input from COM port - device: COM1@9600
-# Input from UDP - device: 127.0.0.1:2948
-  device: COM1
-# Sentences: hdm, hdt, ths
-  heading_sentence: hdm
+# Input is the GPS position and heading data from the external GPS to be sent to the Underwater GPS
+#
+# Input disabled: device: ""
+# Input from COM port: device: COM1@9600
+# Input from UDP: device: 127.0.0.1:2948
+  device: COM1@4800
+# Position sentence used is always: gga
+# Heading sentences can be: hdm, hdt, ths
+  heading_sentence: hdt
 output:
-# Output to UDP - device: 127.0.0.1:2947
-# Output to COM port - device: COM1@9600
+# Output where to send the GPS position from the Underwater GPS
+#
+# Output disabled: device: ""
+# Output to UDP:  device: 127.0.0.1:2947
+# Output to COM port:  device: COM1@9600
   device: 127.0.0.1:2947
-# Sentences: gpgga, ratll
-  position_sentence: gpgga
+# Position sentence for output is one of: gpgga, ratll
+  position_sentence: ratll
+# UGPS URL is the address of the Underwater GPS
 ugps_url: http://192.168.2.94
 ```
 
