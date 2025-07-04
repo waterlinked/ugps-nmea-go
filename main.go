@@ -93,6 +93,7 @@ func main() {
 	availableHeadingSentences["HDM"] = &hdmParser{}
 	availableHeadingSentences["HDT"] = &hdtParser{}
 	availableHeadingSentences["THS"] = &thsParser{}
+	availableHeadingSentences["HDG"] = &hdgParser{}
 	supportedHeadings := keys(availableHeadingSentences)
 
 	fmt.Println(applicationName())

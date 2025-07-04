@@ -3,9 +3,9 @@ module github.com/waterlinked/ugps-go
 go 1.23
 
 require (
+	github.com/adrianmo/go-nmea v1.10.0
 	github.com/gizak/termui/v3 v3.1.0
 	github.com/stretchr/testify v1.9.0
-	github.com/waterlinked/go-nmea v1.2.1
 	go.bug.st/serial v1.6.2
 	gopkg.in/yaml.v3 v3.0.1
 )

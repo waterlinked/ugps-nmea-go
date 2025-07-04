@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/waterlinked/go-nmea"
+	"github.com/adrianmo/go-nmea"
 )
 
 // nmeaHeadingParser is the interface parsing heading input
@@ -21,6 +21,9 @@ type hdtParser struct {
 	count int
 }
 type thsParser struct {
+	count int
+}
+type hdgParser struct {
 	count int
 }
 
@@ -67,4 +70,19 @@ func (p *thsParser) parseNMEA(sentence nmea.Sentence) (bool, error) {
 
 func (p thsParser) String() string {
 	return fmt.Sprintf("THS: %d", p.count)
+}
+
+func (p *hdgParser) parseNMEA(sentence nmea.Sentence) (bool, error) {
+	switch m := sentence.(type) {
+	case nmea.HDG:
+		debugPrintf("HDG: Heading : %f\n", m.Heading)
+		latest.Orientation = m.Heading
+		p.count++
+		return true, nil
+	}
+	return false, nil
+}
+
+func (p hdgParser) String() string {
+	return fmt.Sprintf("HDG: %d", p.count)
 }
