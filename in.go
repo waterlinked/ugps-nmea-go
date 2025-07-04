@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/waterlinked/go-nmea"
+	"github.com/adrianmo/go-nmea"
 	"go.bug.st/serial"
 )
 

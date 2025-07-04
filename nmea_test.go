@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/adrianmo/go-nmea"
 	"github.com/stretchr/testify/assert"
-	"github.com/waterlinked/go-nmea"
 )
 
 func TestPrependZero(t *testing.T) {
