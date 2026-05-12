@@ -22,3 +22,5 @@ output:
   position_sentence: ratll
 # UGPS URL is the address of the Underwater GPS
 ugps_url: http://192.168.2.94
+# Debug logging to file (true/false)
+debug: false

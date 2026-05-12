@@ -5,39 +5,25 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/fs"
 	"net"
 	neturl "net/url"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"strings"
-	"time"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"go.bug.st/serial"
 )
 
 var (
-	debug bool
-
 	Version  string = "0.0.0"
 	BuildNum string = "local"
 	SHA      string = "local"
 )
 
-const dbgLen = 10
-
-var dbgMsg []string = make([]string, 0)
-
-func debugPrintf(arguments string, a ...interface{}) {
-	if debug {
-		if len(dbgMsg) > dbgLen {
-			dbgMsg = dbgMsg[1:dbgLen]
-		}
-		s := time.Now().Format("15:04:05") + " " + fmt.Sprintf(arguments, a...)
-		dbgMsg = append(dbgMsg, strings.TrimSpace(s))
-		//log.Printf(arguments, a...)
-	}
-}
+const applicationLogFilename = "nmea_ugps.log"
 
 // deviceIsUDP uses ":" to decide if this is UDP address or serial device
 func deviceIsUDP(device string) bool {
@@ -75,14 +61,15 @@ func applicationName() string {
 }
 
 func main() {
-	var (
+	args := struct {
 		listen          string
 		headingSentence string
 		output          string
 		sentence        string
 		url             string
 		cfgFilename     string
-	)
+		debugEnabled    bool
+	}{}
 
 	availableSerialisers := make(map[string]nmeaPositionSerialiser)
 	availableSerialisers["RATLL"] = tllSerialiser{}
@@ -97,32 +84,51 @@ func main() {
 	supportedHeadings := keys(availableHeadingSentences)
 
 	fmt.Println(applicationName())
-	flag.StringVar(&listen, "i", "", "UDP device and port (host:port) OR serial device (COM7 /dev/ttyUSB1@4800) to listen for NMEA input. ")
-	flag.StringVar(&output, "o", "", "UDP device and port (host:port) OR serial device (COM7 /dev/ttyUSB1) to send NMEA output. ")
-	flag.StringVar(&sentence, "sentence", "GPGGA", "NMEA output sentence to use. Supported: "+supportedSentences)
-	flag.StringVar(&headingSentence, "heading", "HDT", "Input sentence type to use for heading. Supported: "+supportedHeadings)
-	flag.StringVar(&url, "url", "http://192.168.2.94", "URL of Underwater GPS")
-	flag.StringVar(&cfgFilename, "c", "config.yml", "Configuration file to use")
-	flag.BoolVar(&debug, "d", false, "debug")
+	flag.StringVar(&args.listen, "i", "", "UDP device and port (host:port) OR serial device (COM7 /dev/ttyUSB1@4800) to listen for NMEA input. ")
+	flag.StringVar(&args.output, "o", "", "UDP device and port (host:port) OR serial device (COM7 /dev/ttyUSB1) to send NMEA output. ")
+	flag.StringVar(&args.sentence, "sentence", "GPGGA", "NMEA output sentence to use. Supported: "+supportedSentences)
+	flag.StringVar(&args.headingSentence, "heading", "HDT", "Input sentence type to use for heading. Supported: "+supportedHeadings)
+	flag.StringVar(&args.url, "url", "http://192.168.2.94", "URL of Underwater GPS")
+	flag.StringVar(&args.cfgFilename, "c", "config.yml", "Configuration file to use")
+	flag.BoolVar(&args.debugEnabled, "d", false, "write debug messages to "+applicationLogFilename)
 	flag.Parse()
 
-	cfgSource := fmt.Sprintf("config file '%s'", cfgFilename)
-	cfg := Config{}
-	err := readFile(&cfg, cfgFilename)
+	logF, err := os.OpenFile(applicationLogFilename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		var pathError *fs.PathError
-		if errors.As(err, &pathError) {
+		fmt.Printf("Unable to create application log file: %s\n", err)
+		os.Exit(1)
+	}
+	defer logF.Close()
+
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: logF, TimeFormat: "2006-01-02 15:04:05", NoColor: true}).With().Timestamp().Logger()
+	debug.SetCrashOutput(logF, debug.CrashOptions{})
+
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	log.Info().Msgf("Application started with version: %s, build: %s.%s", Version, BuildNum, SHA)
+
+	cfgSource := fmt.Sprintf("config file '%s'", args.cfgFilename)
+	cfg := Config{}
+	err = readFile(&cfg, args.cfgFilename)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
 			fmt.Printf("no config file can be loaded ('%s').\nusing command line arguments\n", err)
 			cfgSource = "command line arguments"
-			cfg.Input.Device = listen
-			cfg.Input.HeadingSentence = headingSentence
-			cfg.Output.Device = output
-			cfg.Output.PositionSentence = sentence
-			cfg.BaseURL = url
+			cfg.Input.Device = args.listen
+			cfg.Input.HeadingSentence = args.headingSentence
+			cfg.Output.Device = args.output
+			cfg.Output.PositionSentence = args.sentence
+			cfg.BaseURL = args.url
+			cfg.Debug = args.debugEnabled
 		} else {
 			RunUIError(fmt.Sprintf("config file parse error:\n%s", err))
 			os.Exit(1)
 		}
+	}
+	// Enable debug if enabled in config file or specified on command line
+	if cfg.Debug || args.debugEnabled {
+		cfg.Debug = true // update cfg struct if this is from args
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		log.Debug().Msg("Debug logging enabled")
 	}
 
 	baseURL = cfg.BaseURL

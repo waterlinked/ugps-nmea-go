@@ -46,7 +46,9 @@ output:
 # Position sentence for output is one of: gpgga, ratll
   position_sentence: ratll
 # UGPS URL is the address of the Underwater GPS
-ugps_url: http://192.168.2.94
+ugps_url: http://192.168.2.94'
+# Debug logging to file (true/false)
+debug: false
 ```
 
 If the configuration file is not found, parameters from command line are used.

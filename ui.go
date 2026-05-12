@@ -26,7 +26,11 @@ func RunUI(cfg Config, inStatusCh chan inputStats, outputStatusChannel chan outp
 
 	p := widgets.NewParagraph()
 	p.Title = applicationName()
-	p.Text = fmt.Sprintf("PRESS q TO QUIT.\nConfig from: %s\n", cfgSource)
+	msg := fmt.Sprintf("PRESS q TO QUIT.\nConfig from: %s\n", cfgSource)
+	if cfg.Debug {
+		msg += fmt.Sprintf("Debug logging to: '%s'\n", applicationLogFilename)
+	}
+	p.Text = msg
 
 	p.SetRect(0, y, width, height)
 	p.TextStyle.Fg = ui.ColorWhite
@@ -102,29 +106,8 @@ func RunUI(cfg Config, inStatusCh chan inputStats, outputStatusChannel chan outp
 	outDestStatus.TextStyle.Fg = ui.ColorGreen
 	outDestStatus.BorderStyle.Fg = ui.ColorCyan
 
-	y += height
-	height = 15
-
-	dbgText := widgets.NewList()
-	dbgText.Title = "Debug"
-	dbgText.Rows = dbgMsg
-	dbgText.WrapText = true
-	dbgText.SetRect(0, y, width, y+height)
-	dbgText.BorderStyle.Fg = ui.ColorCyan
-
-	hideDebug := widgets.NewParagraph()
-	hideDebug.Text = ""
-	hideDebug.SetRect(0, y, width, y+height)
-	hideDebug.Border = false
-
 	draw := func() {
 		ui.Render(p, inpSrcStatus, inpArrow, inpDestStatus, outSrcStatus, outArrow, outDestStatus, inpRetransmitStatus)
-		if debug {
-			dbgText.Rows = dbgMsg
-			ui.Render(dbgText)
-		} else {
-			ui.Render(hideDebug)
-		}
 	}
 
 	// Initial draw before any events have occurred
@@ -184,12 +167,6 @@ func RunUI(cfg Config, inStatusCh chan inputStats, outputStatusChannel chan outp
 			switch e.ID {
 			case "q", "<C-c>":
 				return
-			case "d":
-				dbgMsg = nil
-				dbgText.Rows = dbgMsg
-				debug = !debug
-
-				draw()
 			}
 		}
 	}

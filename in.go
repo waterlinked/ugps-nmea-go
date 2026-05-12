@@ -4,13 +4,14 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/adrianmo/go-nmea"
+	"github.com/rs/zerolog/log"
 	"go.bug.st/serial"
 )
 
@@ -45,18 +46,18 @@ func parseNMEA(data []byte, headingParse nmeaHeadingParser) (bool, error) {
 
 	s, err := nmea.Parse(line)
 	if err != nil {
-		debugPrintf("Parse err: %s (%s)", err, line)
+		log.Debug().Msgf("Parse err: %s (%s)", err, line)
 		stats.src.unparsableCount++
 		return false, nil
 	}
 
 	switch m := s.(type) {
 	case nmea.GGA:
-		debugPrintf("GGA: Lat/lon : %s %s\n", nmea.FormatGPS(m.Latitude), nmea.FormatGPS(m.Longitude))
+		log.Debug().Msgf("GGA: Lat/lon : %s %s\n", nmea.FormatGPS(m.Latitude), nmea.FormatGPS(m.Longitude))
 
 		fix, err := strconv.ParseFloat(m.FixQuality, 64)
 		if err != nil {
-			debugPrintf("GGA invalid fix quality: %s -> %v\n", m.FixQuality, err)
+			log.Debug().Msgf("GGA invalid fix quality: %s -> %v\n", m.FixQuality, err)
 			fix = 0
 		}
 		latest.Lat = m.Latitude
@@ -77,12 +78,16 @@ func parseNMEA(data []byte, headingParse nmeaHeadingParser) (bool, error) {
 func inputUDPLoop(listen string, headingParser nmeaHeadingParser, msg chan externalMaster, inStatsCh chan inputStats, retransmitConn net.Conn) {
 	udpAddr, err := net.ResolveUDPAddr("udp4", listen)
 	if err != nil {
-		log.Fatal(err)
+		log.Debug().Msgf("Unable to resolve UDP address '%s': %s", listen, err)
+		fmt.Printf("Unable to resolve UDP address '%s': %s\n", listen, err)
+		os.Exit(1)
 	}
 
 	ln, err := net.ListenUDP("udp", udpAddr)
 	if err != nil {
-		panic(err)
+		log.Debug().Msgf("Unable to listen on UDP address '%s': %s", listen, err)
+		fmt.Printf("Unable to listen on UDP address '%s': %s\n", listen, err)
+		os.Exit(1)
 	}
 	defer ln.Close()
 
@@ -108,7 +113,7 @@ func inputUDPLoop(listen string, headingParser nmeaHeadingParser, msg chan exter
 			retransmitConn.SetWriteDeadline(time.Now().Add(1 * time.Second))
 			_, err := retransmitConn.Write(data)
 			if err != nil {
-				debugPrintf("Retransmit error: %s", err)
+				log.Debug().Msgf("Retransmit error: %s", err)
 				stats.retransmit.errorMsg = fmt.Sprintf("Retransmit error: %s", err)
 			} else {
 				stats.retransmit.count += 1
@@ -144,7 +149,7 @@ func inputSerialLoop(s serial.Port, headingParser nmeaHeadingParser, msg chan ex
 		if retransmit != nil {
 			_, err := retransmit.Write(line)
 			if err != nil {
-				debugPrintf("Retransmit error: %s", err)
+				log.Debug().Msgf("Retransmit error: %s", err)
 				stats.retransmit.errorMsg = fmt.Sprintf("Retransmit error: %s", err)
 			} else {
 				stats.retransmit.count += 1
@@ -180,7 +185,7 @@ func inputLoop(masterCh chan externalMaster, inputStatusCh chan inputStats) {
 				stats.dst.sendOk++
 				stats.dst.errorMsg = ""
 			} else {
-				debugPrintf("%v", err)
+				log.Debug().Msgf("%v", err)
 				stats.dst.errorMsg = fmt.Sprintf("%v", err)
 				inputStatusCh <- stats
 			}

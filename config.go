@@ -18,6 +18,7 @@ type Config struct {
 		PositionSentence string `yaml:"position_sentence"`
 	} `yaml:"output"`
 	BaseURL string `yaml:"ugps_url"`
+	Debug   bool   `yaml:"debug"`
 }
 
 func readFile(cfg *Config, filename string) error {
