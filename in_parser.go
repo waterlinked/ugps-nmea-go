@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/adrianmo/go-nmea"
+	"github.com/rs/zerolog/log"
 )
 
 // nmeaHeadingParser is the interface parsing heading input
@@ -30,7 +31,7 @@ type hdgParser struct {
 func (p *hdmParser) parseNMEA(sentence nmea.Sentence) (bool, error) {
 	switch m := sentence.(type) {
 	case nmea.HDM:
-		debugPrintf("HDM: Heading : %f\n", m.Heading)
+		log.Debug().Msgf("HDM: Heading : %f", m.Heading)
 		latest.Orientation = m.Heading
 		p.count++
 		return true, nil
@@ -45,7 +46,7 @@ func (p hdmParser) String() string {
 func (p *hdtParser) parseNMEA(sentence nmea.Sentence) (bool, error) {
 	switch m := sentence.(type) {
 	case nmea.HDT:
-		debugPrintf("HDT: Heading : %f\n", m.Heading)
+		log.Debug().Msgf("HDT: Heading : %f", m.Heading)
 		latest.Orientation = m.Heading
 		p.count++
 		return true, nil
@@ -60,7 +61,7 @@ func (p hdtParser) String() string {
 func (p *thsParser) parseNMEA(sentence nmea.Sentence) (bool, error) {
 	switch m := sentence.(type) {
 	case nmea.THS:
-		debugPrintf("THS: Heading : %f\n", m.Heading)
+		log.Debug().Msgf("THS: Heading : %f", m.Heading)
 		latest.Orientation = m.Heading
 		p.count++
 		return true, nil
@@ -75,7 +76,7 @@ func (p thsParser) String() string {
 func (p *hdgParser) parseNMEA(sentence nmea.Sentence) (bool, error) {
 	switch m := sentence.(type) {
 	case nmea.HDG:
-		debugPrintf("HDG: Heading : %f\n", m.Heading)
+		log.Debug().Msgf("HDG: Heading : %f", m.Heading)
 		latest.Orientation = m.Heading
 		p.count++
 		return true, nil

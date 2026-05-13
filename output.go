@@ -5,6 +5,8 @@ import (
 	"io"
 	"math"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 type outputStats struct {
@@ -34,7 +36,7 @@ func NewOutputter(writer io.Writer, serialiser nmeaPositionSerialiser) *Outputte
 
 func (outputter *Outputter) handleSrcError(err error, message string) {
 	outputter.stats.src.errMsg = fmt.Sprintf("%s: %v", message, err)
-	debugPrintf(outputter.stats.src.errMsg)
+	log.Debug().Msgf("%s", outputter.stats.src.errMsg)
 	outputter.stats.src.getErr++
 	outputter.outputStatusChannel <- outputter.stats
 
