@@ -112,7 +112,10 @@ func setDepth(depth float64) error {
 func setExternalMaster(ext externalMaster) error {
 	url := baseURL + "/api/v1/external/master"
 
-	encoded, _ := json.Marshal(ext)
+	encoded, err := json.Marshal(ext)
+	if err != nil {
+		return err
+	}
 
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(encoded))
 	if err != nil {
@@ -120,7 +123,6 @@ func setExternalMaster(ext externalMaster) error {
 	}
 
 	resp, err := client.Do(req)
-
 	if err != nil {
 		return err
 	}
