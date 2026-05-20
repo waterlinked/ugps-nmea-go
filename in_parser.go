@@ -10,7 +10,7 @@ import (
 // nmeaHeadingParser is the interface parsing heading input
 type nmeaHeadingParser interface {
 	// parseNMEA takes a nmea.Sentence and return true if new data, else false
-	parseNMEA(sentence nmea.Sentence) (bool, error)
+	parseNMEA(sentence nmea.Sentence, latest *externalMaster) (bool, error)
 	// String returns a string representing the current status
 	String() string
 }
@@ -28,7 +28,7 @@ type hdgParser struct {
 	count int
 }
 
-func (p *hdmParser) parseNMEA(sentence nmea.Sentence) (bool, error) {
+func (p *hdmParser) parseNMEA(sentence nmea.Sentence, latest *externalMaster) (bool, error) {
 	switch m := sentence.(type) {
 	case nmea.HDM:
 		log.Debug().Msgf("HDM: Heading : %f", m.Heading)
@@ -43,7 +43,7 @@ func (p hdmParser) String() string {
 	return fmt.Sprintf("HDM: %d", p.count)
 }
 
-func (p *hdtParser) parseNMEA(sentence nmea.Sentence) (bool, error) {
+func (p *hdtParser) parseNMEA(sentence nmea.Sentence, latest *externalMaster) (bool, error) {
 	switch m := sentence.(type) {
 	case nmea.HDT:
 		log.Debug().Msgf("HDT: Heading : %f", m.Heading)
@@ -58,7 +58,7 @@ func (p hdtParser) String() string {
 	return fmt.Sprintf("HDT: %d", p.count)
 }
 
-func (p *thsParser) parseNMEA(sentence nmea.Sentence) (bool, error) {
+func (p *thsParser) parseNMEA(sentence nmea.Sentence, latest *externalMaster) (bool, error) {
 	switch m := sentence.(type) {
 	case nmea.THS:
 		log.Debug().Msgf("THS: Heading : %f", m.Heading)
@@ -73,7 +73,7 @@ func (p thsParser) String() string {
 	return fmt.Sprintf("THS: %d", p.count)
 }
 
-func (p *hdgParser) parseNMEA(sentence nmea.Sentence) (bool, error) {
+func (p *hdgParser) parseNMEA(sentence nmea.Sentence, latest *externalMaster) (bool, error) {
 	switch m := sentence.(type) {
 	case nmea.HDG:
 		log.Debug().Msgf("HDG: Heading : %f", m.Heading)
