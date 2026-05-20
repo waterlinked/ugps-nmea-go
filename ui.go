@@ -205,18 +205,15 @@ func RunUIError(message string) {
 		ui.Render(p, errorPara)
 	}
 
-	// Intial draw before any events have occured
+	// Initial draw before any events have occurred
 	draw()
 
+	// Listen for quit events
 	uiEvents := ui.PollEvents()
-
-	for {
-		select {
-		case e := <-uiEvents:
-			switch e.ID {
-			case "q", "<C-c>":
-				return
-			}
+	for e := range uiEvents {
+		switch e.ID {
+		case "q", "<C-c>":
+			return
 		}
 	}
 }

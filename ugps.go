@@ -54,13 +54,13 @@ func getJSON(url string, target interface{}) error {
 	if err != nil {
 		return err
 	}
+	defer r.Body.Close()
 	if r.StatusCode == 500 {
 		// 500 error happens if no Locator is detected
 		return fmt.Errorf("Locator has no position? Expect status 200, got %d", r.StatusCode)
 	} else if r.StatusCode != 200 {
 		return fmt.Errorf("Expect status 200, got %d", r.StatusCode)
 	}
-	defer r.Body.Close()
 
 	return json.NewDecoder(r.Body).Decode(target)
 }
@@ -112,7 +112,10 @@ func setDepth(depth float64) error {
 func setExternalMaster(ext externalMaster) error {
 	url := baseURL + "/api/v1/external/master"
 
-	encoded, _ := json.Marshal(ext)
+	encoded, err := json.Marshal(ext)
+	if err != nil {
+		return err
+	}
 
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(encoded))
 	if err != nil {
@@ -120,10 +123,10 @@ func setExternalMaster(ext externalMaster) error {
 	}
 
 	resp, err := client.Do(req)
-
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("Expected status 200 but got %d", resp.StatusCode)
 	}
