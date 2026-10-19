@@ -10,7 +10,9 @@ func TestParserInputHDG(t *testing.T) {
 	input := "$HCHDG,101.1,,,7.1,W*3C"
 
 	headingParser := &hdgParser{}
-	gotUpdate, err := parseNMEA([]byte(input), headingParser)
+	var latest externalMaster
+	var stats inputSourceStats
+	gotUpdate, err := parseNMEA([]byte(input), headingParser, &latest, &stats)
 	require.NoError(t, err)
 	require.True(t, gotUpdate)
 
@@ -23,7 +25,9 @@ func TestParserInputHDT(t *testing.T) {
 	input := "$GPHDT,274.07,T*03"
 
 	headingParser := &hdtParser{}
-	gotUpdate, err := parseNMEA([]byte(input), headingParser)
+	var latest externalMaster
+	var stats inputSourceStats
+	gotUpdate, err := parseNMEA([]byte(input), headingParser, &latest, &stats)
 	require.NoError(t, err)
 	require.True(t, gotUpdate)
 
@@ -36,7 +40,9 @@ func TestParserInputHDM(t *testing.T) {
 	input := "$HCHDM,277.19,M*13"
 
 	headingParser := &hdmParser{}
-	gotUpdate, err := parseNMEA([]byte(input), headingParser)
+	var latest externalMaster
+	var stats inputSourceStats
+	gotUpdate, err := parseNMEA([]byte(input), headingParser, &latest, &stats)
 	require.NoError(t, err)
 	require.True(t, gotUpdate)
 
@@ -49,7 +55,9 @@ func TestParserInputTHS(t *testing.T) {
 	input := "$GPTHS,338.01,A*0E"
 
 	headingParser := &thsParser{}
-	gotUpdate, err := parseNMEA([]byte(input), headingParser)
+	var latest externalMaster
+	var stats inputSourceStats
+	gotUpdate, err := parseNMEA([]byte(input), headingParser, &latest, &stats)
 	require.NoError(t, err)
 	require.True(t, gotUpdate)
 
@@ -62,7 +70,9 @@ func TestParserInputGGA(t *testing.T) {
 	input := "$GPGGA,015540.000,3150.68378,N,11711.93139,E,1,17,0.6,0051.6,M,0.0,M,,*58"
 
 	headingParser := &thsParser{}
-	gotUpdate, err := parseNMEA([]byte(input), headingParser)
+	var latest externalMaster
+	var stats inputSourceStats
+	gotUpdate, err := parseNMEA([]byte(input), headingParser, &latest, &stats)
 	require.NoError(t, err)
 	require.True(t, gotUpdate)
 
@@ -80,7 +90,10 @@ func TestParserInvalid(t *testing.T) {
 	input := "$GPGGA,*58"
 
 	headingParser := &hdmParser{}
-	gotUpdate, err := parseNMEA([]byte(input), headingParser)
+	var latest externalMaster
+	var stats inputSourceStats
+	gotUpdate, err := parseNMEA([]byte(input), headingParser, &latest, &stats)
 	require.NoError(t, err)
 	require.False(t, gotUpdate)
+	require.Equal(t, 1, stats.unparsableCount)
 }

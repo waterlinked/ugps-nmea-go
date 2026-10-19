@@ -165,7 +165,9 @@ func main() {
 
 	// Channels
 	inStatusCh := make(chan inputStats, 1)
+	inputStatsUpdatesCh := make(chan inputStatsUpdate, 16)
 	masterCh := make(chan externalMaster, 1)
+	go inputStatsLoop(inputStatsUpdatesCh, inStatusCh)
 
 	// Output
 	var writer io.Writer = nil
@@ -190,7 +192,7 @@ func main() {
 		}
 		if deviceIsUDP(cfg.Input.Device) {
 			// Input from UDP
-			go inputUDPLoop(cfg.Input.Device, hParser, masterCh, inStatusCh, retransmit)
+			go inputUDPLoop(cfg.Input.Device, hParser, masterCh, inputStatsUpdatesCh, retransmit)
 		} else {
 			// Input from serial port
 			port, baudrate := baudAndPortFromDevice(cfg.Input.Device)
@@ -204,13 +206,13 @@ func main() {
 			}
 			defer s.Close()
 
-			go inputSerialLoop(s, hParser, masterCh, inStatusCh, retransmit)
+			go inputSerialLoop(s, hParser, masterCh, inputStatsUpdatesCh, retransmit)
 			if sameInOut {
 				// Output is to same serial port as input
 				writer = s
 			}
 		}
-		go inputLoop(masterCh, inStatusCh)
+		go inputLoop(masterCh, inputStatsUpdatesCh)
 	}
 
 	// Setup output
